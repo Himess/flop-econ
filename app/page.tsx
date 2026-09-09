@@ -1,13 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DISAGREEMENTS, META, PARAMS, PARAMS_SHA256 } from "@/model/params.generated";
 import type { AssumptionRef } from "@/model/types";
 import { ValidatorPanel } from "./components/ValidatorPanel";
 import { AgentPanel } from "./components/AgentPanel";
-import { ValuationPanel } from "./components/ValuationPanel";
-import { TimelinePanel } from "./components/TimelinePanel";
-import { Mark } from "./components/Marks";
+import { DOCS_PATH } from "./lib/docs";
 import {
   cleared,
   clearSaved,
@@ -20,31 +17,23 @@ import {
 } from "./lib/state";
 
 const REPO = "https://github.com/Himess/flop-econ";
-type Tab = "validator" | "agent" | "valuation" | "timeline";
+type Tab = "validator" | "agent";
 
 export default function Page() {
   const [s, setScenario] = useState<Scenario>(EXAMPLE);
   const [tab, setTab] = useState<Tab>("validator");
   const [assumptions, setAssumptions] = useState<AssumptionRef[]>([]);
+  const [showAssumptions, setShowAssumptions] = useState(false);
   const [source, setSource] = useState<"url" | "saved" | "example">("example");
   const [copied, setCopied] = useState(false);
-  /**
-   * Whether the user has changed anything yet. The tool writes its own query string, so without
-   * this a plain reload would read that back and report "loaded from a shared link" when nobody
-   * shared anything. Nothing is written to the URL or to storage until an actual edit.
-   */
   const touched = useRef(false);
 
-  // Read URL first, then storage, then the worked example. Done in an effect so the server
-  // render and the first client render agree.
   useEffect(() => {
     const { scenario, source: src } = load();
     setScenario(scenario);
     setSource(src);
   }, []);
 
-  // Keep the address bar in step so any state is shareable, and persist for the next visit —
-  // but only once the user has actually edited something (see `touched`).
   useEffect(() => {
     if (typeof window === "undefined" || !touched.current) return;
     window.history.replaceState(null, "", `?${toQuery(s)}`);
@@ -58,14 +47,10 @@ export default function Page() {
   }, []);
 
   const onAssumptions = useCallback((a: AssumptionRef[]) => setAssumptions(a), []);
-
   const showingExample = source !== "url" && !touched.current && isExample(s);
-  const planned = PARAMS.filter((p) => p.bucket === "PLANNED");
-  const absent = PARAMS.filter((p) => p.bucket === "ABSENT");
 
   const copyLink = async () => {
     try {
-      // Ensure the address bar holds the current scenario even if nothing was edited.
       window.history.replaceState(null, "", `?${toQuery(s)}`);
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
@@ -75,28 +60,38 @@ export default function Page() {
     }
   };
 
+  const btn = {
+    background: "var(--panel)",
+    border: "1px solid var(--rule)",
+    color: "var(--ink-2)",
+  } as const;
+
   return (
-    <div className="mx-auto max-w-[1180px] px-7">
-      <header className="flex flex-wrap items-center justify-between gap-6 pt-[18px]">
+    <div className="mx-auto max-w-[1060px] px-7 pb-24">
+      <header className="flex flex-wrap items-center justify-between gap-4 pt-[18px]">
         <div className="text-[14px]" style={{ fontFamily: "var(--font-mono)" }}>
           flop<span style={{ color: "var(--defined)" }}>-</span>econ
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4 text-[12.5px]">
+          <a
+            href={DOCS_PATH}
+            className="underline decoration-dotted underline-offset-[3px]"
+            style={{ color: "var(--ink-2)" }}
+          >
+            How this is calculated
+          </a>
           <a
             href={REPO}
-            className="text-[11.5px] underline decoration-dotted underline-offset-[3px]"
-            style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}
+            className="underline decoration-dotted underline-offset-[3px]"
+            style={{ color: "var(--ink-3)" }}
           >
-            params.yaml + model + tests ↗
+            Repository
           </a>
-          <span className="text-[11.5px]" style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}>
-            yellow paper draft · params fetched {String(META.fetched)}
-          </span>
         </div>
       </header>
 
       <nav
-        className="no-print mt-4 flex gap-0.5"
+        className="mt-5 flex flex-wrap items-center gap-0.5"
         style={{ borderBottom: "1px solid var(--rule)" }}
         role="tablist"
         aria-label="Role"
@@ -105,8 +100,6 @@ export default function Page() {
           [
             ["validator", "Validator"],
             ["agent", "Agent"],
-            ["valuation", "Valuation"],
-            ["timeline", "Timeline"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -127,39 +120,39 @@ export default function Page() {
         ))}
         <a
           href="https://flop.finance/intro/revenue/"
-          className="ml-auto px-4 pb-2.5 pt-2 text-[13px] no-underline"
+          className="ml-auto px-3 pb-2.5 pt-2 text-[12.5px] no-underline"
           style={{ color: "var(--ink-3)" }}
         >
           Miner — FLOP&rsquo;s own model ↗
         </a>
       </nav>
 
-      {/* Example banner: one line, one control. Nobody meets a dead page. */}
-      <div className="no-print mt-3 flex flex-wrap items-center gap-3">
-        {showingExample ? (
-          <p className="text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-            Showing an example scenario. The cost and price figures are illustrative, not
-            specification values — they are marked as assumptions wherever they appear.
-          </p>
-        ) : (
-          <p className="text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-            {source === "url" ? "Loaded from a shared link." : "Your figures."}
-          </p>
-        )}
+      {/* one line of status, the assumption chip, two controls */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+          {showingExample
+            ? "Example figures — replace them with yours."
+            : source === "url"
+              ? "Loaded from a shared link."
+              : "Your figures."}
+        </p>
+        <button
+          onClick={() => setShowAssumptions((v) => !v)}
+          aria-expanded={showAssumptions}
+          className="cursor-pointer rounded-full px-2.5 py-0.5 text-[11.5px]"
+          style={{
+            background: "none",
+            border: `1px dotted ${assumptions.length ? "var(--absent)" : "var(--rule)"}`,
+            color: assumptions.length ? "var(--absent)" : "var(--ink-3)",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          {assumptions.length} assumed
+        </button>
+
         <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={copyLink}
-            className="cursor-pointer rounded-[3px] px-2.5 py-1 text-[12px]"
-            style={{ background: "var(--panel)", border: "1px solid var(--rule)", color: "var(--ink-2)" }}
-          >
-            {copied ? "Link copied" : "Copy link"}
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="cursor-pointer rounded-[3px] px-2.5 py-1 text-[12px]"
-            style={{ background: "var(--panel)", border: "1px solid var(--rule)", color: "var(--ink-2)" }}
-          >
-            Export PDF
+          <button onClick={copyLink} className="cursor-pointer rounded-[3px] px-2.5 py-1 text-[12px]" style={btn}>
+            {copied ? "Copied" : "Copy link"}
           </button>
           <button
             onClick={() => {
@@ -171,140 +164,67 @@ export default function Page() {
             className="cursor-pointer rounded-[3px] px-2.5 py-1 text-[12px]"
             style={{ background: "none", border: "1px solid var(--rule)", color: "var(--ink-3)" }}
           >
-            Clear all
+            Clear
           </button>
         </div>
       </div>
 
-      <div className="mt-7 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_268px]">
-        <main>
-          {tab === "validator" ? (
-            <ValidatorPanel s={s} set={set} onAssumptions={onAssumptions} />
-          ) : tab === "agent" ? (
-            <AgentPanel s={s} set={set} onAssumptions={onAssumptions} />
-          ) : tab === "valuation" ? (
-            <ValuationPanel s={s} set={set} onAssumptions={onAssumptions} />
-          ) : (
-            <TimelinePanel s={s} set={set} onAssumptions={onAssumptions} />
-          )}
-
-          <section className="py-[30px]">
-            <h2 className="text-[16px] font-medium">
-              Where the published pages and the specification disagree
-            </h2>
-            <p className="mb-5 mt-1 max-w-[62ch] text-[13.5px]" style={{ color: "var(--ink-3)" }}>
-              {DISAGREEMENTS.length} of them, recorded with their own wording. None are errors —
-              they are places the product pages lead a draft, and each one changes what a model
-              should compute.
-            </p>
-            {DISAGREEMENTS.map((d) => (
-              <div key={d.id} className="py-3" style={{ borderBottom: "1px solid var(--rule)" }}>
-                <div className="mb-1 text-[14px]">{d.id.replace(/_/g, " ")}</div>
-                <p className="max-w-[74ch] text-[13px]" style={{ color: "var(--ink-2)" }}>
-                  <span style={{ color: "var(--ink-3)" }}>Specification: </span>
-                  {d.spec_says}
-                </p>
-                <p className="max-w-[74ch] text-[13px]" style={{ color: "var(--ink-2)" }}>
-                  <span style={{ color: "var(--ink-3)" }}>Downstream: </span>
-                  {d.downstream_says}
-                </p>
-                <p className="mt-1 max-w-[74ch] text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-                  {d.status}
-                  {d.tracking ? ` · ${d.tracking}` : ""} — {d.handling}
-                </p>
-              </div>
-            ))}
-          </section>
-
-          <p className="max-w-[74ch] pt-2 text-[12.5px] leading-[1.7]" style={{ color: "var(--ink-3)" }}>
-            The yellow paper is a draft on roughly a weekly cadence; this inventory is current as of
-            the fetch date above ({String(META.spec_status)}, page updated{" "}
-            {String(META.spec_page_updated)}, decision record {String(META.spec_decision_record)},
-            params sha256:{PARAMS_SHA256}). Per §0, nothing here is a claim about running code — the
-            specification describes the protocol FLOP targets, not a snapshot of the codebase.
-            Session price, token price and network demand are your inputs; this tool has no view on
-            them. Not financial advice, not a forecast.
+      {showAssumptions ? (
+        <div
+          className="mt-3 rounded-[3px] px-4 py-3"
+          style={{ background: "var(--panel)", border: "1px dotted var(--absent)" }}
+        >
+          <p className="text-[12px]" style={{ color: "var(--ink-2)" }}>
+            Figures you supplied that the specification does not define.
           </p>
-          <p className="mt-3 max-w-[74ch] text-[12.5px] leading-[1.7]" style={{ color: "var(--ink-3)" }}>
-            The repository holds{" "}
-            <a href={REPO} className="underline decoration-dotted underline-offset-[3px]">
-              the parameter set with its provenance, the model layer, and the tests
-            </a>{" "}
-            — {PARAMS.length} parameters, each with a bucket and a citation, generated into a typed
-            module whose checksum is pinned by a test so it cannot drift from the YAML.
-          </p>
-        </main>
-
-        {/* Persistent assumption ledger. Below the results on narrow screens, never above. */}
-        <aside className="ledger text-[13px] lg:sticky lg:top-6">
-          <h3
-            className="mb-3 pb-2.5 text-[13px] font-medium"
-            style={{ color: "var(--ink-2)", borderBottom: "1px solid var(--rule)" }}
-          >
-            Assumptions in play
-          </h3>
-
           {assumptions.length === 0 ? (
-            <p className="py-2 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-              Nothing supplied yet. Figures that need one are blocked rather than defaulted.
+            <p className="mt-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
+              None — figures that need one are blocked rather than defaulted.
             </p>
           ) : (
-            assumptions.map((a, i) => (
-              <div
-                key={`${a.key}-${i}`}
-                className="py-2.5"
-                style={{ borderBottom: "1px solid var(--rule)" }}
-              >
-                <div
-                  className="break-all text-[11.5px]"
-                  style={{ fontFamily: "var(--font-mono)", color: "var(--ink)" }}
+            <ul className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+              {assumptions.map((a, i) => (
+                <li
+                  key={`${a.key}-${i}`}
+                  className="text-[11.5px]"
+                  style={{ fontFamily: "var(--font-mono)" }}
                 >
-                  {a.key}
-                </div>
-                <div
-                  className="mt-0.5 text-[10.5px]"
-                  style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}
-                >
-                  {a.cite.split(";")[0]} · {a.value.toLocaleString("en-US")} {a.unit}
-                </div>
-              </div>
-            ))
-          )}
-
-          <details className="mt-5">
-            <summary
-              className="cursor-pointer text-[12.5px]"
-              style={{ color: "var(--ink-2)" }}
-            >
-              Open items behind this tool ({planned.length + absent.length})
-            </summary>
-            <div className="mt-2">
-              {[...planned, ...absent].map((p) => (
-                <div key={p.key} className="py-2" style={{ borderBottom: "1px solid var(--rule)" }}>
-                  <div
-                    className="break-all text-[11px]"
-                    style={{ fontFamily: "var(--font-mono)", color: "var(--ink-2)" }}
-                  >
-                    {p.key}
-                    <Mark bucket={p.bucket} />
-                  </div>
-                  <div
-                    className="mt-0.5 text-[10.5px]"
-                    style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}
-                  >
-                    {p.cite.split(";")[0]}
-                  </div>
-                </div>
+                  <span style={{ color: "var(--ink-2)" }}>{a.key}</span>{" "}
+                  <span style={{ color: "var(--ink-3)" }}>
+                    {a.value.toLocaleString("en-US")} {a.unit}
+                  </span>
+                </li>
               ))}
-            </div>
-          </details>
-
-          <p className="mt-4 text-[12px] leading-[1.6]" style={{ color: "var(--ink-3)" }}>
-            Every figure carries its provenance. Solid marks are ratified parameters, dashed are
-            deferred, dotted are yours.
+            </ul>
+          )}
+          <p className="mt-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            <a href={DOCS_PATH} className="underline decoration-dotted underline-offset-2">
+              What each one affects
+            </a>
           </p>
-        </aside>
-      </div>
+        </div>
+      ) : null}
+
+      <main className="mt-8">
+        {tab === "validator" ? (
+          <ValidatorPanel s={s} set={set} onAssumptions={onAssumptions} />
+        ) : (
+          <AgentPanel s={s} set={set} onAssumptions={onAssumptions} />
+        )}
+      </main>
+
+      <footer
+        className="mt-16 pt-4 text-[12px] leading-relaxed"
+        style={{ borderTop: "1px solid var(--rule)", color: "var(--ink-3)" }}
+      >
+        <p className="max-w-[74ch]">
+          Solid marks are ratified parameters, dashed are deferred, dotted are yours. Each links to{" "}
+          <a href={DOCS_PATH} className="underline decoration-dotted underline-offset-2">
+            the calculation behind it
+          </a>
+          . Not financial advice, not a forecast.
+        </p>
+      </footer>
     </div>
   );
 }

@@ -1,128 +1,155 @@
 "use client";
 
 /**
- * The provenance primitives. Every number in the interface goes through one of these, so it is
- * not structurally possible to render a figure without its bucket and citation.
+ * Tool-page primitives.
+ *
+ * The rule this file enforces: no component here accepts a paragraph. Provenance survives as a
+ * one-line mark that links into `/docs`; the explanation lives there. A mark without a destination
+ * is a regression, so `docs` is required on every Mark that carries a citation.
  */
-import { useId, useState } from "react";
-import { dedupe, isBlocked, type Bucket, type Computed } from "@/model/types";
+import { isBlocked, type Bucket, type Computed } from "@/model/types";
+import { href, type AnchorId } from "../lib/docs";
 import { auto } from "../lib/format";
 
-const MARK: Record<Bucket, string> = { DEFINED: "b-def", PLANNED: "b-plan", ABSENT: "b-abs" };
+const CLS: Record<Bucket, string> = { DEFINED: "b-def", PLANNED: "b-plan", ABSENT: "b-abs" };
 const MEANS: Record<Bucket, string> = {
-  DEFINED: "A value the specification fixes.",
-  PLANNED: "Named by the specification but deferred, unwired, or awaiting ratification.",
-  ABSENT: "Not defined by the specification. This rests on a figure you supplied.",
+  DEFINED: "Fixed by the specification. Click for the calculation.",
+  PLANNED: "Named by the specification but unresolved. Click for the calculation.",
+  ABSENT: "Not in the specification — rests on a figure you supplied. Click for the calculation.",
 };
 
-export function Mark({ bucket, label }: { bucket: Bucket; label?: string }) {
+/**
+ * The mark under a headline names its provenance, not itself. Three figures each carrying the
+ * words "how this is calculated" is three identical red strings that say nothing about where the
+ * number came from; "R9.5 · E.39" says it in the specification's own vocabulary and still links to
+ * the same place. Two citations is the legible limit at a headline's scale.
+ */
+function citeLabel(result: Computed): string {
+  // "computed" is the model's synthetic cite for a horizon that simply ran out; it names no rule,
+  // so a call site that hits that path passes its own mark instead.
+  const cites = result.cites.filter((c) => c !== "computed").slice(0, 2);
+  if (cites.length === 0) return "how this is calculated";
+  const short = cites.map((c) => c.split("—")[0]!.split("(")[0]!.trim());
+  const joined = short.join(" · ");
+  return joined.length > 30 ? short[0]! : joined;
+}
+
+/** A citation mark. Always a link; the destination is checked by a test. */
+export function Mark({
+  bucket,
+  label,
+  docs,
+}: {
+  bucket: Bucket;
+  label: string;
+  docs: AnchorId;
+}) {
   return (
-    <span className={`b ${MARK[bucket]}`} title={MEANS[bucket]}>
-      {label ?? bucket.toLowerCase()}
-    </span>
+    <a className={`b ${CLS[bucket]}`} href={href(docs)} title={MEANS[bucket]}>
+      {label}
+    </a>
   );
 }
 
-export function Cites({ cites }: { cites: readonly string[] }) {
-  return <>{dedupe(cites).join(" · ")}</>;
-}
-
-/**
- * A labelled row with its value, mark and citation. The workhorse of both panels.
- * Blocked results render at the same weight as a number — a refusal is a result, not an error.
- */
-export function Row({
+/** The three figures that dominate the validator answer. */
+export function Headline({
   label,
   result,
+  docs,
+  suffix,
+  prefix,
+  fallback,
   mark,
-  total,
-  note,
 }: {
   label: string;
   result: Computed;
-  /** Overrides the citation shown beside the value, e.g. a short "R9.5". */
+  docs: AnchorId;
+  suffix?: string;
+  prefix?: string;
+  /** Shown instead of a number when the result is a refusal, e.g. "not within 36 months". */
+  fallback?: string;
+  /** Overrides the derived citation where the result carries no rule of its own. */
   mark?: string;
-  total?: boolean;
-  note?: React.ReactNode;
 }) {
+  const blocked = isBlocked(result);
+  return (
+    <div>
+      <div className="text-[11.5px] uppercase tracking-wide" style={{ color: "var(--ink-3)" }}>
+        {label}
+      </div>
+      <div
+        className="mt-1.5 font-mono leading-none"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "clamp(26px, 4.2vw, 38px)",
+          fontWeight: 500,
+          color: blocked ? "var(--absent)" : "var(--ink)",
+        }}
+      >
+        {blocked ? (
+          <span style={{ fontSize: "clamp(15px, 2.2vw, 19px)" }}>{fallback ?? "needs an input"}</span>
+        ) : (
+          <>
+            {prefix}
+            {auto(result.value)}
+            {suffix ? (
+              <span className="ml-1 text-[14px]" style={{ color: "var(--ink-3)" }}>
+                {suffix}
+              </span>
+            ) : null}
+          </>
+        )}
+      </div>
+      <div className="mt-2.5">
+        <Mark
+          bucket={blocked ? "ABSENT" : result.bucket}
+          label={mark ?? citeLabel(result)}
+          docs={docs}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** A one-line diagnostic row. Label, value, mark. No prose. */
+export function Line({
+  label,
+  result,
+  docs,
+  mark,
+  suffix,
+  fallback,
+}: {
+  label: string;
+  result: Computed;
+  docs: AnchorId;
+  mark: string;
+  suffix?: string;
+  fallback?: string;
+}) {
+  const blocked = isBlocked(result);
   return (
     <div
-      className="flex items-baseline justify-between gap-4 border-b py-[11px]"
-      style={{ borderColor: "var(--rule)" }}
+      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+      style={{ borderBottom: "1px solid var(--rule)" }}
     >
-      <span className="text-[14px]" style={{ color: total ? "var(--ink)" : "var(--ink-2)" }}>
+      <span className="text-[13.5px]" style={{ color: "var(--ink-2)" }}>
         {label}
-        {note}
       </span>
-      <span
-        className="whitespace-nowrap font-mono"
-        style={{ fontSize: total ? "20px" : "16px", fontFamily: "var(--font-mono)" }}
-      >
-        {isBlocked(result) ? (
-          <span style={{ color: "var(--absent)", fontSize: "13px" }}>needs an input</span>
+      <span className="whitespace-nowrap font-mono text-[14px]" style={{ fontFamily: "var(--font-mono)" }}>
+        {blocked ? (
+          <span className="text-[12.5px]" style={{ color: "var(--absent)" }}>
+            {fallback ?? "needs an input"}
+          </span>
         ) : (
           <>
             {auto(result.value)}
-            <Mark bucket={result.bucket} label={mark ?? undefined} />
+            {suffix ? <span style={{ color: "var(--ink-3)" }}> {suffix}</span> : null}
           </>
         )}
+        <Mark bucket={blocked ? "ABSENT" : result.bucket} label={mark} docs={docs} />
       </span>
     </div>
-  );
-}
-
-/**
- * A blocked panel. States the fix first and the citation second — "Enter a DA cost to compute
- * net" is actionable in a way that "blocked · E.47" is not.
- */
-export function Blocked({ result }: { result: Computed }) {
-  if (!isBlocked(result)) return null;
-  return (
-    <div
-      className="mt-4 px-[14px] py-3"
-      style={{ background: "var(--panel)", borderLeft: "2px dotted var(--absent)" }}
-    >
-      <p className="text-[13px]" style={{ color: "var(--ink)" }}>
-        {result.message}
-      </p>
-      <p className="mt-1 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-        {result.detail}
-      </p>
-      <p
-        className="mt-2 text-[11.5px]"
-        style={{ fontFamily: "var(--font-mono)", color: "var(--ink-3)" }}
-      >
-        <Cites cites={result.cites} />
-      </p>
-    </div>
-  );
-}
-
-/** A short collapsed explanation next to the number it concerns. Nothing longer than a paragraph. */
-export function Note({ summary, children }: { summary: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  return (
-    <>
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen((v) => !v)}
-        className="ml-2 cursor-pointer text-[12px] underline decoration-dotted underline-offset-[3px]"
-        style={{ color: "var(--ink-3)", background: "none", border: 0 }}
-      >
-        {open ? "hide" : summary}
-      </button>
-      <span
-        id={id}
-        hidden={!open}
-        className="mb-3 mt-1 block px-[14px] py-[11px] text-[13px] leading-[1.65] print-block"
-        style={{ background: "var(--panel)", borderLeft: "2px solid var(--defined)", color: "var(--ink-2)" }}
-      >
-        {children}
-      </span>
-    </>
   );
 }
 
@@ -133,8 +160,6 @@ export function Field({
   onChange,
   suffix,
   assumed,
-  cite,
-  hint,
   placeholder,
 }: {
   id: string;
@@ -142,28 +167,25 @@ export function Field({
   value: string;
   onChange: (v: string) => void;
   suffix?: string;
-  /** Stands in for an ABSENT parameter: marked, and listed in the ledger when filled. */
   assumed?: boolean;
-  cite?: string;
-  hint?: string;
   placeholder?: string;
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-[12px]" style={{ color: "var(--ink-2)" }}>
+      <label htmlFor={id} className="mb-1 block text-[11.5px]" style={{ color: "var(--ink-3)" }}>
         {label}
-        {assumed ? (
-          <span style={{ color: "var(--absent)", fontFamily: "var(--font-mono)" }}> ·</span>
-        ) : null}
+        {assumed ? <span style={{ color: "var(--absent)" }}> ·</span> : null}
       </label>
       <div className="flex items-center gap-1.5">
         <input
           id={id}
           inputMode="decimal"
           value={value}
-          placeholder={placeholder ?? (assumed ? "not defined" : undefined)}
+          placeholder={placeholder ?? (assumed ? "yours" : undefined)}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-[3px] px-2.5 py-2 font-mono text-[13px]"
+          // min-w-0 rather than w-full: a flex item at 100% width pushes its unit label off the
+          // right edge in a two-column phone grid, which is how "FLOP/yr" got clipped.
+          className="min-w-0 flex-1 rounded-[3px] px-2.5 py-2 font-mono text-[13px]"
           style={{
             background: "var(--panel)",
             border: `1px solid ${assumed && value === "" ? "var(--absent)" : "var(--rule)"}`,
@@ -172,24 +194,11 @@ export function Field({
           }}
         />
         {suffix ? (
-          <span className="whitespace-nowrap text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          <span className="whitespace-nowrap text-[11px]" style={{ color: "var(--ink-3)" }}>
             {suffix}
           </span>
         ) : null}
       </div>
-      {hint ? (
-        <p className="mt-1 text-[11.5px] leading-snug" style={{ color: "var(--ink-3)" }}>
-          {hint}
-        </p>
-      ) : null}
-      {cite ? (
-        <p
-          className="mt-0.5 text-[10.5px]"
-          style={{ fontFamily: "var(--font-mono)", color: "var(--absent)" }}
-        >
-          {cite}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -200,18 +209,16 @@ export function Select({
   value,
   onChange,
   options,
-  hint,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   options: readonly { value: string; label: string }[];
-  hint?: string;
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-[12px]" style={{ color: "var(--ink-2)" }}>
+      <label htmlFor={id} className="mb-1 block text-[11.5px]" style={{ color: "var(--ink-3)" }}>
         {label}
       </label>
       <select
@@ -232,52 +239,79 @@ export function Select({
           </option>
         ))}
       </select>
-      {hint ? (
-        <p className="mt-1 text-[11.5px] leading-snug" style={{ color: "var(--ink-3)" }}>
-          {hint}
-        </p>
-      ) : null}
     </div>
   );
 }
 
-export function Section({
-  title,
-  sub,
-  children,
-  last,
-}: {
-  title: string;
-  sub?: string;
-  children: React.ReactNode;
-  last?: boolean;
-}) {
-  return (
-    <section
-      className="py-[30px]"
-      style={{ borderBottom: last ? "none" : "1px solid var(--rule)" }}
-    >
-      <h2 className="text-[16px] font-medium">{title}</h2>
-      {sub ? (
-        <p className="mb-5 mt-1 max-w-[62ch] text-[13.5px]" style={{ color: "var(--ink-3)" }}>
-          {sub}
-        </p>
-      ) : null}
-      {children}
-    </section>
-  );
-}
-
-export function FieldRow({ children }: { children: React.ReactNode }) {
+/** One compact input row. */
+export function Inputs({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="grid gap-3.5 pb-[22px]"
-      style={{
-        gridTemplateColumns: "repeat(auto-fit,minmax(158px,1fr))",
-        borderBottom: "1px solid var(--rule)",
-      }}
+      className="grid gap-3"
+      style={{ gridTemplateColumns: "repeat(auto-fit,minmax(132px,1fr))" }}
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * A collapsed block of diagnostics. Everything that is not the answer lives behind one of these.
+ * `summary` is a label, never a sentence.
+ */
+export function Drawer({
+  summary,
+  count,
+  children,
+}: {
+  summary: string;
+  count?: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group mt-8" style={{ borderTop: "1px solid var(--rule)" }}>
+      <summary
+        className="flex cursor-pointer list-none items-center gap-2 py-3 text-[13px]"
+        style={{ color: "var(--ink-2)" }}
+      >
+        <span
+          className="inline-block transition-transform group-open:rotate-90"
+          style={{ color: "var(--ink-3)" }}
+        >
+          ▸
+        </span>
+        {summary}
+        {count !== undefined ? (
+          <span style={{ color: "var(--ink-3)", fontFamily: "var(--font-mono)", fontSize: "11.5px" }}>
+            {count}
+          </span>
+        ) : null}
+      </summary>
+      <div className="pb-4">{children}</div>
+    </details>
+  );
+}
+
+/** A heading with at most one sentence beneath it. The type enforces the rule. */
+export function Block({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  /** One sentence. If it needs a paragraph, the paragraph belongs in /docs. */
+  note?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-10">
+      <h2 className="text-[14px] font-medium">{title}</h2>
+      {note ? (
+        <p className="mt-1 max-w-[70ch] text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+          {note}
+        </p>
+      ) : null}
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
