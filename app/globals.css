@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+body {
+  background: #fbfbfa;
+  color: #1a1a1a;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Print / PDF export. The assumptions drawer must always be in the output:
+   a result that is shareable without its assumption set defeats the whole tool. */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  details { display: block !important; }
+  details > summary { display: none; }
+  details[open] > *, details > * { display: revert !important; }
+  body { background: #fff; font-size: 11px; }
+  .page-break { break-before: page; }
+  a[href]:after { content: " (" attr(href) ")"; font-size: 9px; color: #666; }
+}
