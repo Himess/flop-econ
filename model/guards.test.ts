@@ -59,8 +59,19 @@ describe("no magic numbers in app/", () => {
   for (const p of PARAMS) {
     if (typeof p.value === "number" && Math.abs(p.value) >= 1000) domainNumbers.add(p.value);
   }
-  // Unmistakably protocol, even though small.
-  for (const n of [96, 48, 24, 12, 6, 3, 0.75, 0.05, 0.01, 1.1, 1.25, 1.5, 0.2, 42236]) {
+  /**
+   * Small numbers that are unmistakably protocol quantities here, added by hand because they fall
+   * below the magnitude cut-off above.
+   *
+   * Where the line sits, and why: these are the readings a component would type if it hardcoded a
+   * rule instead of calling the model — the reward schedule, the cost anchor, phi, alpha, the
+   * committee premium, the capacity-stake coefficient. Deliberately NOT included are 1.5, 1.25 and
+   * 0.75: those are decimal readings of ppm/ppt values (1_500_000, 1_250_000, 750) which are not
+   * stored in that form, and they collide with ordinary quantities — 1.5 is also a plausible kW
+   * draw, which is exactly the false positive that surfaced. The guard polices stored values and
+   * unmistakable readings, not every ratio that could be derived from one.
+   */
+  for (const n of [96, 48, 24, 12, 6, 3, 0.05, 0.01, 1.1, 0.2, 42236]) {
     domainNumbers.add(n);
   }
   // Legal anywhere: array indices, halves, percent scaling, opacity.
@@ -81,11 +92,27 @@ describe("no magic numbers in app/", () => {
   });
 
   it("the denylist is not vacuous — it would catch a real regression", () => {
-    // Sanity: the guard must actually fire on the numbers it claims to police.
     expect(domainNumbers.has(42236)).toBe(true);
     expect(domainNumbers.has(31536000)).toBe(true);
     expect(domainNumbers.has(305505)).toBe(true);
     expect(domainNumbers.size).toBeGreaterThan(15);
+  });
+
+  it("the detector fires on planted violations, and not on layout or ordinary quantities", () => {
+    // Non-vacuity proved by running the real detector over synthetic sources, rather than
+    // asserting the denylist's contents and trusting the scan.
+    const scan = (src: string) =>
+      [...code(src).matchAll(/(?<![\w.$])(\d[\d_]*(?:\.\d+)?)(?![\w.])/g)]
+        .map((m) => Number(m[1]!.replace(/_/g, "")))
+        .filter((n) => domainNumbers.has(n));
+
+    // Planted: a component applying the committee premium and the cost anchor by hand.
+    expect(scan("const net = pool * 1.1 - 42236;")).toEqual([1.1, 42236]);
+    expect(scan("const yr = perBlock * 31_536_000;")).toEqual([31536000]);
+    // Not flagged: Tailwind classes, JSX prose, SVG geometry, an ordinary power draw.
+    expect(scan('<td className="px-2 py-1.5">a 1.1x multiplier</td>')).toEqual([]);
+    expect(scan("<rect width={62} height={104} />")).toEqual([]);
+    expect(scan("const powerKw = 1.5;")).toEqual([]);
   });
 });
 

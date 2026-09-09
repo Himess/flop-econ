@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:fd676b48a902cd63)
+// Source: params.yaml (sha256:97d5ca8c953783a0)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -29,7 +29,7 @@ export interface Disagreement {
   readonly handling: string;
 }
 
-export const PARAMS_SHA256 = "fd676b48a902cd63";
+export const PARAMS_SHA256 = "97d5ca8c953783a0";
 
 export const META = {
   "spec_source": "https://flop.finance/intro/yellowpaper/",
@@ -86,16 +86,18 @@ export const PARAMS: readonly Param[] = [
     "value": 1,
     "unit": "seconds",
     "bucket": "DEFINED",
-    "cite": "§2.2; R9.8",
-    "note": "Fixed. All block-count windows in this file assume it."
+    "cite": "§2.2 (target parameters table); §1.2; R9.8",
+    "note": "§2.2's table reads \"Block interval | 1 second (fixed)\", and §1.2 states \"All durations assume 1-second blocks\" — so this is the accounting convention every block-count window in the spec is converted through, and Appendix A's own descriptions use it (\"~730 days at 1s/block\"). Caveat worth carrying: §2.1 says \"One-second blocks and sub-second finality are TARGETS; latency remains workload-, topology-, and committee-dependent until benchmarked\", and E.46 leaves that unmeasured. The parameter of record is 1 s; realised cadence is not established."
   },
   {
     "key": "blocks_per_year",
     "value": 31536000,
     "unit": "blocks",
     "bucket": "DEFINED",
-    "cite": "Appendix A (floor_annual_emission derivation); D-0436",
-    "note": "Stated in the spec's own floor_annual_emission line: 3 FLOP/block x 31,536,000 blocks/yr."
+    "derived": true,
+    "derivation": "365 x 86,400 at the §2.2 block interval of 1 second. Appendix A states the figure itself in the floor_annual_emission row — \"perpetual floor tail: 3 FLOP/block x 31,536,000 blocks/yr (= 189,216,000 FLOP/era)\" — so it is read from Appendix A, not inferred from it.",
+    "cite": "Appendix A (floor_annual_emission); §2.2; D-0436",
+    "note": "Cross-checks, all exact, all from halving_interval_blocks = 63,072,000 at this cadence: subsidy total 63,072,000 x (16+8+4+2+1) = 1,955,232,000 (R9.3); cumulative emission through era 5 = 63,072,000 x 189 = 11,920,608,000 (R9.2); 2*R0*H = 12,109,824,000 (R9.2); floor_annual_emission = 3 x 31,536,000 = 94,608,000. Independently corroborated downstream: FLOP's own calculator states era-0 issuance as \"9.6768M FLOP/day\", which is exactly (96 reward + 16 subsidy) x 86,400 blocks/day. Appendix A carries no standalone block-time or blocks-per-year row; this is the nearest thing to one and every stated total reproduces from it."
   },
   {
     "key": "miner_share_ppt",
@@ -776,7 +778,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
     "downstream_says": "3,500,000,000 FLOP (tokenomics workbook rev 2026-08-26; teaser; /intro/revenue/)",
     "status": "Unratified. flop.finance/intro/revenue/ states it plainly.",
     "quote": "\"This leads protocol params deliberately. params/flop-protocol-params.yaml still carries the ratified genesis_supply = 2,483,460,000 (D-0435); the workbook restated the pool to 3,500,000,000 on 2026-08-22, and landing that in params is Tier A work blocked on an open gap with no ratifying decision yet (ECON-009 §2.3 W1, tracked in issue #1418).\"",
-    "tracking": "#1418",
+    "tracking": "#1418 (stated on flop.finance/intro/revenue/, not in the yellow paper)",
     "handling": "Model the params value as live. Expose the workbook value as an explicit alternative."
   },
   {
@@ -785,7 +787,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
     "downstream_says": "85% miner / 15% validator (tokenomics workbook target; teaser)",
     "status": "The teaser flags itself.",
     "quote": "\"Two figures on this page LEAD the protocol parameters of record and are not yet ratified: the 3.5bn genesis airdrop (the parameters say 2,483,460,000) and the 85/15 inference-fee split (settlement pays the miner 99%, with 1% to the audit pool, until the validator fee leg lands).\"",
-    "tracking": "#1352",
+    "tracking": "#1352 (stated on flop.finance/intro/revenue/, not in the yellow paper)",
     "handling": "Use 1% for the audit pool. The 85/15 validator fee leg does not exist yet."
   },
   {
@@ -807,7 +809,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
     "spec_says": "validator_active_set_cap = 1,000 (Appendix A, R15.5b, D-0437)",
     "downstream_says": "E.41: \"the runtime cannot reach it: MaxAuthorities = MAX_ACTIVE_VALIDATORS = 200\". /intro/validator/: \"does not yet enforce the cap.\"",
     "status": "Ratified but not wired.",
-    "tracking": "#1393",
+    "tracking": "#1393 (yellow paper, E.41 Blocking)",
     "handling": "Model both 200 and 1,000; the per-validator share differs 5x between them."
   },
   {
@@ -815,7 +817,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
     "spec_says": "E.38: the genesis-distribution path \"has no normative section\"; \"whether spend-to-unlock ships\" is open. \"faucet\" and \"technocore\" appear zero times in the yellow paper.",
     "downstream_says": "/intro/agent/: 'Every 3 FLOP of inference fees unlocks 1 airdropped FLOP.'",
     "status": "Product claim with no normative basis.",
-    "tracking": "#257, #1176",
+    "tracking": "#257, #1176 (yellow paper, E.38 Blocking)",
     "handling": "Do not model. Name it in the drawer as an open item."
   },
   {
@@ -823,7 +825,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
     "spec_says": "Current behaviour: the validator 10% pool auto-compounds into locked stake (D-0408).",
     "downstream_says": "The workbook (rev 2026-08-20) ratifies 0% reward lock.",
     "status": "E.39 [RATIFY] - 'the distribution hook is unchanged'.",
-    "tracking": "#1356",
+    "tracking": "#1356 (yellow paper, E.39 Blocking)",
     "handling": "Model both. It materially changes IRR."
   }
 ];

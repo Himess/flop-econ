@@ -100,6 +100,11 @@ export function ValidatorPanel({
       : null;
 
   const maxReward = blockReward(0).value;
+  // Scale for the ladder bars: the longest finite recovery among the non-terminal rungs.
+  const maxRecovery = ladder.reduce(
+    (m, r) => (r.terminal || isBlocked(r.recoveryDays) ? m : Math.max(m, r.recoveryDays.value)),
+    0,
+  );
 
   return (
     <div>
@@ -229,46 +234,58 @@ export function ValidatorPanel({
       >
         <div>
           {ladder.map((r) => {
-            const loss = r.lossPermanent.value + r.lossReturned.value;
             const denom = s.stake || 1;
-            const width = Math.max(2, Math.min(100, (loss / denom) * 100));
+            const severity = r.lossPermanent.value / denom;
+            // The bar tracks RECOVERY TIME — the single quantity this section is about. It used
+            // to track severity while the number tracked time, which made the eye read
+            // "7 days is longer than 22 days". Severity is carried by the percentage in the
+            // label and by the colour ramp instead.
+            const days = isBlocked(r.recoveryDays) ? null : r.recoveryDays.value;
+            const width = days === null || maxRecovery === 0 ? 0 : Math.max(2, (days / maxRecovery) * 100);
             const colour = r.terminal
               ? "var(--absent)"
-              : r.lossPermanent.value / denom >= 0.05
+              : severity >= 0.05
                 ? "var(--planned)"
                 : "var(--defined)";
             return (
               <div
                 key={r.rung}
                 className="grid items-center gap-3.5 py-[7px]"
-                style={{ gridTemplateColumns: "minmax(120px,158px) minmax(0,1fr) 76px" }}
+                style={{ gridTemplateColumns: "minmax(140px,190px) minmax(0,1fr) 76px" }}
               >
                 <span className="text-[13px]" style={{ color: "var(--ink-2)" }}>
-                  {r.label.split("—")[0]!.trim()}
+                  {r.label.split(/[—-]/)[0]!.trim()}{" "}
+                  <span style={{ color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
+                    {pct(severity + r.lossReturned.value / denom).replace(".00", "")}
+                  </span>
                 </span>
-                <div
-                  className="h-4 rounded-[2px]"
-                  style={{ width: `${width}%`, background: colour, minWidth: "3px" }}
-                  title={`${auto(loss)} FLOP at risk · ${r.reentry}`}
-                />
+                {r.terminal ? (
+                  <span className="text-[12px]" style={{ color: "var(--absent)" }}>
+                    terminal — eject and blacklist, no recovery path
+                  </span>
+                ) : (
+                  <div
+                    className="h-4 rounded-[2px]"
+                    style={{ width: `${width}%`, background: colour, minWidth: "3px" }}
+                    title={`${days === null ? "not computable" : dp2(days) + " days"} to recover · ${auto(r.lossPermanent.value)} FLOP burned · ${r.reentry}`}
+                  />
+                )}
                 <span
                   className="text-right text-[12.5px]"
                   style={{ fontFamily: "var(--font-mono)", color: "var(--ink-2)" }}
                 >
-                  {r.terminal
-                    ? "ejected"
-                    : isBlocked(r.recoveryDays)
-                      ? "—"
-                      : `${dp2(r.recoveryDays.value)}d`}
+                  {r.terminal ? "ejected" : days === null ? "—" : `${dp2(days)}d`}
                 </span>
               </div>
             );
           })}
         </div>
-        <p className="mt-3 text-[12px]" style={{ color: "var(--ink-3)" }}>
-          Lone equivocation burns nothing permanently — half is withheld and returned after 180
-          days. The fraud class is terminal, so there is no recovery to compute. DA serve-or-slash
-          sits outside the §11.3 table.
+        <p className="mt-3 max-w-[68ch] text-[12px]" style={{ color: "var(--ink-3)" }}>
+          Bar length is recovery time. The percentage beside each label is the stake at risk, and
+          the colour follows it — so a long bar on a small percentage is exactly the point.
+          Lone equivocation is the case: it burns nothing permanently, because half is withheld and
+          returned after 180 days, so a 50% headline recovers faster than a 5% one. The fraud class
+          is terminal. DA serve-or-slash sits outside the §11.3 table.
         </p>
       </Section>
 

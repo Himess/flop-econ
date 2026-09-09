@@ -5,6 +5,7 @@ import { DISAGREEMENTS, META, PARAMS, PARAMS_SHA256 } from "@/model/params.gener
 import type { AssumptionRef } from "@/model/types";
 import { ValidatorPanel } from "./components/ValidatorPanel";
 import { AgentPanel } from "./components/AgentPanel";
+import { ValuationPanel } from "./components/ValuationPanel";
 import { Mark } from "./components/Marks";
 import {
   cleared,
@@ -18,7 +19,7 @@ import {
 } from "./lib/state";
 
 const REPO = "https://github.com/Himess/flop-econ";
-type Tab = "validator" | "agent";
+type Tab = "validator" | "agent" | "valuation";
 
 export default function Page() {
   const [s, setScenario] = useState<Scenario>(EXAMPLE);
@@ -103,6 +104,7 @@ export default function Page() {
           [
             ["validator", "Validator"],
             ["agent", "Agent"],
+            ["valuation", "Valuation"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -176,8 +178,10 @@ export default function Page() {
         <main>
           {tab === "validator" ? (
             <ValidatorPanel s={s} set={set} onAssumptions={onAssumptions} />
-          ) : (
+          ) : tab === "agent" ? (
             <AgentPanel s={s} set={set} onAssumptions={onAssumptions} />
+          ) : (
+            <ValuationPanel s={s} set={set} onAssumptions={onAssumptions} />
           )}
 
           <section className="py-[30px]">
