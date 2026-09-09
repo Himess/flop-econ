@@ -243,15 +243,62 @@ export function Select({
   );
 }
 
-/** One compact input row. */
-export function Inputs({ children }: { children: React.ReactNode }) {
+/**
+ * One compact input row.
+ *
+ * `bare` is for the row nested inside a drawer, where a second panel inside a panel would read as
+ * a box in a box; everywhere else the fields sit on their own surface so the eye can tell the
+ * things you type from the things the tool answers.
+ */
+export function Inputs({ children, bare }: { children: React.ReactNode; bare?: boolean }) {
   return (
     <div
-      className="grid gap-3"
-      style={{ gridTemplateColumns: "repeat(auto-fit,minmax(132px,1fr))" }}
+      className={bare ? "grid gap-3" : "grid gap-x-3 gap-y-4 rounded-[6px] p-4"}
+      style={{
+        gridTemplateColumns: "repeat(auto-fit,minmax(136px,1fr))",
+        ...(bare ? {} : { background: "var(--panel)", border: "1px solid var(--rule)" }),
+      }}
     >
       {children}
     </div>
+  );
+}
+
+/**
+ * A titled surface. The chart earns one because a plot floating on the page ground has no edge,
+ * and an edge is most of what makes a figure read as considered rather than pasted in.
+ */
+export function Card({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  /** One short link or label, right-aligned in the header. */
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      className="rounded-[6px]"
+      style={{ background: "var(--panel)", border: "1px solid var(--rule)" }}
+    >
+      <header
+        className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3"
+        style={{ borderBottom: "1px solid var(--rule)" }}
+      >
+        <h2 className="text-[13px] font-medium tracking-[.01em]">{title}</h2>
+        {aside ? <div className="text-[12px]">{aside}</div> : null}
+      </header>
+      <div className="px-4 pb-4 pt-4">{children}</div>
+    </section>
+  );
+}
+
+/** The three answers, on one rule-separated row. */
+export function Answers({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="answers grid gap-x-8 gap-y-9 sm:grid-cols-3">{children}</div>
   );
 }
 
@@ -269,9 +316,9 @@ export function Drawer({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group mt-8" style={{ borderTop: "1px solid var(--rule)" }}>
+    <details className="drawer group" style={{ borderBottom: "1px solid var(--rule)" }}>
       <summary
-        className="flex cursor-pointer list-none items-center gap-2 py-3 text-[13px]"
+        className="flex cursor-pointer list-none items-center gap-2.5 py-3.5 text-[13.5px]"
         style={{ color: "var(--ink-2)" }}
       >
         <span

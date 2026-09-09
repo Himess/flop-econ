@@ -13,6 +13,19 @@
   --defined:#5fd1c4;
   --planned:#e5b45c;
   --absent:#f27e6b;
+
+  /* Chart series are their own palette, not the bucket palette.
+     The bucket hues encode provenance (ratified / deferred / yours) and are tuned for 10.5px
+     text; borrowing them for series identity meant amber and coral sat at ΔE 13.8 in normal
+     vision — below the 15 floor, so two of the three lines were genuinely hard to tell apart.
+     These two are stepped into the dark-surface lightness band (OKLCH L 0.48–0.67) against
+     #0d1f31 and pass every check: CVD ΔE 14.5, normal-vision ΔE 19.3, contrast ≥3:1.
+     Cost is not a third hue — it is a benchmark, so it wears muted ink and a thinner stroke. */
+  --s-earned:#b88720;
+  --s-liquid:#00ab9e;
+  --s-cost:#7f9ab2;
+  --s-grid:#1b3a58;
+  --s-crosshair:#8fa8c0;
   color-scheme:dark;
 }
 
@@ -25,7 +38,6 @@ body{
   font-family:var(--font-sans),system-ui,sans-serif;
   font-size:15px;
   line-height:1.6;
-  padding:0 0 4rem;
 }
 a{color:inherit}
 
@@ -43,6 +55,19 @@ a{color:inherit}
 /* A utility `display:block` beats the bare `hidden` attribute, which silently left every
    collapsed note expanded. Force it, then re-open them for print. */
 [hidden]{display:none !important}
+
+/* Drawers: no native marker, and a summary that acknowledges the pointer. */
+.drawer>summary::-webkit-details-marker{display:none}
+.drawer>summary::marker{content:""}
+.drawer>summary:hover{color:var(--ink)}
+
+/* The three answers are one row of three readings, so a hairline separates them rather than
+   whitespace alone — at this size, gap on its own reads as three unrelated blocks. */
+@media(min-width:640px){
+  .answers{column-gap:0}
+  .answers>*{padding-right:2.25rem}
+  .answers>*+*{border-left:1px solid var(--rule);padding-left:2.25rem}
+}
 
 .arc{transition:stroke-dasharray .45s ease}
 @media(prefers-reduced-motion:reduce){

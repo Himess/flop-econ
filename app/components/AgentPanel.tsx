@@ -15,7 +15,7 @@ import { isBlocked, type AssumptionRef } from "@/model/types";
 import { auto, pct } from "../lib/format";
 import { ANCHORS, href } from "../lib/docs";
 import type { Scenario } from "../lib/state";
-import { Block, Drawer, Field, Headline, Inputs, Line, Mark } from "./Marks";
+import { Answers, Block, Drawer, Field, Headline, Inputs, Line, Mark } from "./Marks";
 
 export function AgentPanel({
   s,
@@ -82,10 +82,8 @@ export function AgentPanel({
       </Inputs>
 
       {/* ------------------------------------------------------------------ the answer */}
-      <div
-        className="mt-12 grid gap-10 sm:grid-cols-3"
-        style={{ borderTop: "1px solid var(--rule)", paddingTop: "36px" }}
-      >
+      <div className="mt-11">
+        <Answers>
         <Headline
           label="Lost to over-reservation"
           result={over.lostIfCooperative}
@@ -99,6 +97,7 @@ export function AgentPanel({
           docs={ANCHORS.closePaths}
           suffix="FLOP"
         />
+        </Answers>
       </div>
 
       <p className="mt-5 max-w-[74ch] text-[13px]" style={{ color: "var(--ink-2)" }}>

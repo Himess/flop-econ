@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssumptionRef } from "@/model/types";
 import { ValidatorPanel } from "./components/ValidatorPanel";
 import { AgentPanel } from "./components/AgentPanel";
-import { DOCS_PATH } from "./lib/docs";
+import { ANCHORS, DOCS_PATH } from "./lib/docs";
+import { Mark } from "./components/Marks";
 import {
   cleared,
   clearSaved,
@@ -65,12 +66,19 @@ export default function Page() {
     border: "1px solid var(--rule)",
     color: "var(--ink-2)",
   } as const;
+  const btnCls =
+    "cursor-pointer rounded-[4px] px-3 py-1.5 text-[12px] transition-colors hover:brightness-125";
 
   return (
     <div className="mx-auto max-w-[1060px] px-7 pb-24">
-      <header className="flex flex-wrap items-center justify-between gap-4 pt-[18px]">
-        <div className="text-[14px]" style={{ fontFamily: "var(--font-mono)" }}>
-          flop<span style={{ color: "var(--defined)" }}>-</span>econ
+      <header className="flex flex-wrap items-center justify-between gap-4 pt-5">
+        <div className="flex items-baseline gap-3">
+          <span className="text-[14px]" style={{ fontFamily: "var(--font-mono)" }}>
+            flop<span style={{ color: "var(--defined)" }}>-</span>econ
+          </span>
+          <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>
+            validator &amp; agent economics
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[12.5px]">
           <a
@@ -91,7 +99,7 @@ export default function Page() {
       </header>
 
       <nav
-        className="mt-5 flex flex-wrap items-center gap-0.5"
+        className="mt-6 flex flex-wrap items-center gap-0.5"
         style={{ borderBottom: "1px solid var(--rule)" }}
         role="tablist"
         aria-label="Role"
@@ -128,7 +136,7 @@ export default function Page() {
       </nav>
 
       {/* one line of status, the assumption chip, two controls */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="mb-3 mt-5 flex flex-wrap items-center gap-2.5">
         <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
           {showingExample
             ? "Example figures — replace them with yours."
@@ -139,7 +147,7 @@ export default function Page() {
         <button
           onClick={() => setShowAssumptions((v) => !v)}
           aria-expanded={showAssumptions}
-          className="cursor-pointer rounded-full px-2.5 py-0.5 text-[11.5px]"
+          className="cursor-pointer rounded-full px-2.5 py-[3px] text-[11.5px] transition-colors"
           style={{
             background: "none",
             border: `1px dotted ${assumptions.length ? "var(--absent)" : "var(--rule)"}`,
@@ -151,7 +159,7 @@ export default function Page() {
         </button>
 
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={copyLink} className="cursor-pointer rounded-[3px] px-2.5 py-1 text-[12px]" style={btn}>
+          <button onClick={copyLink} className={btnCls} style={btn}>
             {copied ? "Copied" : "Copy link"}
           </button>
           <button
@@ -161,7 +169,7 @@ export default function Page() {
               clearSaved();
               setSource("saved");
             }}
-            className="cursor-pointer rounded-[3px] px-2.5 py-1 text-[12px]"
+            className={btnCls}
             style={{ background: "none", border: "1px solid var(--rule)", color: "var(--ink-3)" }}
           >
             Clear
@@ -205,7 +213,7 @@ export default function Page() {
         </div>
       ) : null}
 
-      <main className="mt-8">
+      <main className="mt-6">
         {tab === "validator" ? (
           <ValidatorPanel s={s} set={set} onAssumptions={onAssumptions} />
         ) : (
@@ -217,13 +225,13 @@ export default function Page() {
         className="mt-16 pt-4 text-[12px] leading-relaxed"
         style={{ borderTop: "1px solid var(--rule)", color: "var(--ink-3)" }}
       >
-        <p className="max-w-[74ch]">
-          Solid marks are ratified parameters, dashed are deferred, dotted are yours. Each links to{" "}
-          <a href={DOCS_PATH} className="underline decoration-dotted underline-offset-2">
-            the calculation behind it
-          </a>
-          . Not financial advice, not a forecast.
+        <p className="flex flex-wrap items-center gap-x-1 gap-y-2">
+          <span>A mark carries its provenance and links to the calculation:</span>
+          <Mark bucket="DEFINED" label="ratified" docs={ANCHORS.params} />
+          <Mark bucket="PLANNED" label="deferred" docs={ANCHORS.params} />
+          <Mark bucket="ABSENT" label="yours" docs={ANCHORS.params} />
         </p>
+        <p className="mt-2.5">Not financial advice, not a forecast.</p>
       </footer>
     </div>
   );

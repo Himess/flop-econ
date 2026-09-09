@@ -23,7 +23,7 @@ import { isBlocked, num, type AssumptionRef } from "@/model/types";
 import { auto, dp2, int, pct } from "../lib/format";
 import { ANCHORS, href } from "../lib/docs";
 import { SET_SIZES, type Scenario } from "../lib/state";
-import { Block, Drawer, Field, Headline, Inputs, Line, Mark, Select } from "./Marks";
+import { Answers, Block, Card, Drawer, Field, Headline, Inputs, Line, Mark, Select } from "./Marks";
 import { Chart } from "./Chart";
 
 const MAX_HALVINGS = num(param("max_halvings"));
@@ -212,10 +212,8 @@ export function ValidatorPanel({
       </Inputs>
 
       {/* ------------------------------------------------------------------ the answer */}
-      <div
-        className="mt-12 grid gap-10 sm:grid-cols-3"
-        style={{ borderTop: "1px solid var(--rule)", paddingTop: "36px" }}
-      >
+      <div className="mt-11">
+        <Answers>
         <Headline
           label="Break-even valuation"
           result={rev.breakEvenValuation}
@@ -231,6 +229,7 @@ export function ValidatorPanel({
           fallback={`never within ${int(s.horizonMonths)} months`}
           mark="E.39"
         />
+        </Answers>
       </div>
 
       <p className="mt-5 max-w-[74ch] text-[13px]" style={{ color: "var(--ink-2)" }}>
@@ -267,14 +266,20 @@ export function ValidatorPanel({
 
       {/* ------------------------------------------------------------------ the chart */}
       <div className="mt-10">
-        <Chart rows={runs[live]} priceKnown={!isBlocked(price)} />
-        <p className="mt-3 text-[12px]" style={{ color: "var(--ink-3)" }}>
-          One fixed price for every month; a token locked for two years will not be worth it when it
-          unlocks.{" "}
-          <a href={href(ANCHORS.fixedPrice)} className="underline decoration-dotted underline-offset-2">
-            More
-          </a>
-        </p>
+        <Card
+          title="Cumulative cash flow"
+          aside={
+            <a
+              href={href(ANCHORS.fixedPrice)}
+              className="underline decoration-dotted underline-offset-[3px]"
+              style={{ color: "var(--ink-3)" }}
+            >
+              One fixed price for every month
+            </a>
+          }
+        >
+          <Chart rows={runs[live]} priceKnown={!isBlocked(price)} />
+        </Card>
       </div>
 
       {/* ------------------------------------------------------------------ diagnostics */}
@@ -315,7 +320,7 @@ export function ValidatorPanel({
           </span>
         </div>
         <div className="mt-4">
-          <Inputs>
+          <Inputs bare>
             <Field
               id="v-h"
               label="Horizon"
@@ -370,7 +375,7 @@ export function ValidatorPanel({
           fallback="never"
         />
         <div className="mt-4">
-          <Inputs>
+          <Inputs bare>
             <Select
               id="v-mode"
               label="Price input"
@@ -541,7 +546,7 @@ export function ValidatorPanel({
           suffix="FLOP"
         />
         <div className="mt-4">
-          <Inputs>
+          <Inputs bare>
             <Field
               id="v-verd"
               label="Audit verdicts"
