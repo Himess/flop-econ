@@ -327,6 +327,37 @@ parameters:
       validator in ValidatorQueue, not directly in ActiveValidators." Queued validators earn no
       validator-leg reward (R15.5b).
 
+  - key: validator_unbonding_slash_lock
+    value: "blocked while any session, dispute or audit is open"
+    unit: rule
+    bucket: DEFINED
+    cite: "§15.7; §13.1 (M11); D-0419"
+    note: >-
+      The 21-day unbonding clock does not merely run alongside open work — it is frozen by it.
+      M11: "unbonding frozen while any session/dispute open (slash-lock); unlock cooldown runs
+      after last closes". §1.2's reading rule states the principle: "stake outlives disputes".
+      So time-to-cash is 21 days AFTER the last open item closes, not 21 days from the request.
+
+  - key: validator_bond_lock_months
+    bucket: ABSENT
+    cite: "not in the yellow paper; E.38 leaves the genesis distribution path unspecified"
+    note: >-
+      Community reporting says the testnet top-1000 receive their bond free, locked 24 months.
+      Searched the yellow paper for "24 month", "24-month", "two year", "bonded stake" and
+      "locked 24": ZERO hits. E.38 states the path distributing genesis_supply "has no normative
+      section", and lists "what the validator cohort converts on" as open. So this is a user
+      input with a dotted mark, never a default wearing a spec badge.
+
+  - key: network_stake_growth_rate
+    bucket: ABSENT
+    cite: "no spec view on what other validators do"
+    note: >-
+      Needed only because reward auto-compounding (E.39, D-0408) grows your stake, and pool share
+      is pro-rata by stake. If every validator compounds at the same rate the share is UNCHANGED —
+      the pool is fixed by emission, not by total stake, so compounding redistributes nothing at
+      the set average. Your share only grows if you compound faster than the network. The spec has
+      no view on that, so it is an input.
+
   - key: validator_reward_liquidity
     bucket: PLANNED
     cite: "E.39 — Validator-reward liquidity [RATIFY]; D-0408; blocking #1356"

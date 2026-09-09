@@ -6,6 +6,7 @@ import type { AssumptionRef } from "@/model/types";
 import { ValidatorPanel } from "./components/ValidatorPanel";
 import { AgentPanel } from "./components/AgentPanel";
 import { ValuationPanel } from "./components/ValuationPanel";
+import { TimelinePanel } from "./components/TimelinePanel";
 import { Mark } from "./components/Marks";
 import {
   cleared,
@@ -19,7 +20,7 @@ import {
 } from "./lib/state";
 
 const REPO = "https://github.com/Himess/flop-econ";
-type Tab = "validator" | "agent" | "valuation";
+type Tab = "validator" | "agent" | "valuation" | "timeline";
 
 export default function Page() {
   const [s, setScenario] = useState<Scenario>(EXAMPLE);
@@ -105,6 +106,7 @@ export default function Page() {
             ["validator", "Validator"],
             ["agent", "Agent"],
             ["valuation", "Valuation"],
+            ["timeline", "Timeline"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -180,8 +182,10 @@ export default function Page() {
             <ValidatorPanel s={s} set={set} onAssumptions={onAssumptions} />
           ) : tab === "agent" ? (
             <AgentPanel s={s} set={set} onAssumptions={onAssumptions} />
-          ) : (
+          ) : tab === "valuation" ? (
             <ValuationPanel s={s} set={set} onAssumptions={onAssumptions} />
+          ) : (
+            <TimelinePanel s={s} set={set} onAssumptions={onAssumptions} />
           )}
 
           <section className="py-[30px]">

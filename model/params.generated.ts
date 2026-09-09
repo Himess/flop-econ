@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:97d5ca8c953783a0)
+// Source: params.yaml (sha256:fdc029a1a6dda2a4)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -29,7 +29,7 @@ export interface Disagreement {
   readonly handling: string;
 }
 
-export const PARAMS_SHA256 = "97d5ca8c953783a0";
+export const PARAMS_SHA256 = "fdc029a1a6dda2a4";
 
 export const META = {
   "spec_source": "https://flop.finance/intro/yellowpaper/",
@@ -314,6 +314,26 @@ export const PARAMS: readonly Param[] = [
     "bucket": "DEFINED",
     "cite": "§15.2",
     "note": "\"register freezes the account's full reducible balance as self-stake and places the validator in ValidatorQueue, not directly in ActiveValidators.\" Queued validators earn no validator-leg reward (R15.5b)."
+  },
+  {
+    "key": "validator_unbonding_slash_lock",
+    "value": "blocked while any session, dispute or audit is open",
+    "unit": "rule",
+    "bucket": "DEFINED",
+    "cite": "§15.7; §13.1 (M11); D-0419",
+    "note": "The 21-day unbonding clock does not merely run alongside open work — it is frozen by it. M11: \"unbonding frozen while any session/dispute open (slash-lock); unlock cooldown runs after last closes\". §1.2's reading rule states the principle: \"stake outlives disputes\". So time-to-cash is 21 days AFTER the last open item closes, not 21 days from the request."
+  },
+  {
+    "key": "validator_bond_lock_months",
+    "bucket": "ABSENT",
+    "cite": "not in the yellow paper; E.38 leaves the genesis distribution path unspecified",
+    "note": "Community reporting says the testnet top-1000 receive their bond free, locked 24 months. Searched the yellow paper for \"24 month\", \"24-month\", \"two year\", \"bonded stake\" and \"locked 24\": ZERO hits. E.38 states the path distributing genesis_supply \"has no normative section\", and lists \"what the validator cohort converts on\" as open. So this is a user input with a dotted mark, never a default wearing a spec badge."
+  },
+  {
+    "key": "network_stake_growth_rate",
+    "bucket": "ABSENT",
+    "cite": "no spec view on what other validators do",
+    "note": "Needed only because reward auto-compounding (E.39, D-0408) grows your stake, and pool share is pro-rata by stake. If every validator compounds at the same rate the share is UNCHANGED — the pool is fixed by emission, not by total stake, so compounding redistributes nothing at the set average. Your share only grows if you compound faster than the network. The spec has no view on that, so it is an input."
   },
   {
     "key": "validator_reward_liquidity",
@@ -830,7 +850,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
   }
 ];
 
-export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_backend_cost" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
+export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_unbonding_slash_lock" | "validator_bond_lock_months" | "network_stake_growth_rate" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_backend_cost" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
 
 const BY_KEY = new Map<string, Param>(PARAMS.map((p) => [p.key, p]));
 

@@ -46,6 +46,10 @@ export interface Scenario {
   hardwareUsd: number | undefined;
   amortMonths: number | undefined;
   hostingUsdMonth: number | undefined;
+  // timeline
+  horizonMonths: number;
+  bondLockMonths: number | undefined;
+  exitAtMonth: number | undefined;
 }
 
 const MIN_STAKE = num(param("validator_min_stake"));
@@ -95,6 +99,11 @@ export const EXAMPLE: Scenario = {
   hardwareUsd: 30_000,
   amortMonths: 36,
   hostingUsdMonth: 400,
+  // 36 months so a two-year lock sits inside the default view. Bond lock and exit are left
+  // blank deliberately: neither is a spec rule, and blank models "you keep validating".
+  horizonMonths: 36,
+  bondLockMonths: undefined,
+  exitAtMonth: undefined,
 };
 
 /** Every field that stands in for an ABSENT parameter, so the UI can badge them consistently. */
@@ -110,6 +119,7 @@ export const ASSUMED_FIELDS = [
   "hardwareUsd",
   "amortMonths",
   "hostingUsdMonth",
+  "bondLockMonths",
 ] as const satisfies readonly (keyof Scenario)[];
 
 const KEYS: Record<keyof Scenario, string> = {
@@ -137,6 +147,9 @@ const KEYS: Record<keyof Scenario, string> = {
   hardwareUsd: "hw",
   amortMonths: "am",
   hostingUsdMonth: "ho",
+  horizonMonths: "hm",
+  bondLockMonths: "bl",
+  exitAtMonth: "ex",
 };
 
 const STORAGE_KEY = "flop-econ.scenario.v1";
@@ -170,7 +183,7 @@ export function fromQuery(query: string): Partial<Scenario> | null {
       out.liquidity = q.get(key) === "liquid" ? "liquid" : "locked_autocompound";
     } else if (field === "priceMode") {
       out.priceMode = q.get(key) === "direct" ? "direct" : "valuation";
-    } else if (field === "setSize" || field === "era" || field === "anchorYear") {
+    } else if (field === "setSize" || field === "era" || field === "anchorYear" || field === "horizonMonths") {
       const v = readNum(q, key);
       if (v !== undefined) (out[field] as number) = v;
     } else {
@@ -234,6 +247,9 @@ export function cleared(): Scenario {
     hardwareUsd: undefined,
     amortMonths: undefined,
     hostingUsdMonth: undefined,
+    horizonMonths: 36,
+    bondLockMonths: undefined,
+    exitAtMonth: undefined,
   };
 }
 
