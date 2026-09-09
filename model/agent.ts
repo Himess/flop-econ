@@ -28,44 +28,64 @@ export interface TariffInputs {
   /** Claimed reference work, G_n. */
   gnClaimed: number;
   /**
-   * ABSENT (E.30). Channel pay units per G_n, converted to FLOP.
-   * R12.1d: "The current implementation uses a numeric rate of one channel pay unit per stored
-   * G_n unit; E.30 must ratify its dimensional relation to FLOP's base units and 18 decimals."
+   * ABSENT (E.30). FLOP per channel pay unit.
+   *
+   * Both tariff legs are denominated in channel pay units — channel_base_per_turn = 1 and
+   * rate_G = 1 channel pay unit per G_n (R12.1d) — while escrow E is in FLOP. One conversion
+   * governs the whole tariff, and E.30 has not ratified it.
    */
-  rateGToFlop?: number;
+  unitToFlop?: number;
 }
 
 /**
- * The unilateral-close tariff. R12.1d: P = BasePerTurn*n + rate_G*G_claimed.
+ * The tariff in CHANNEL PAY UNITS, which is the only form the spec actually fixes.
+ * R12.1d: P = BasePerTurn*n + rate_G*G_claimed, with both coefficients equal to 1.
+ * Fully DEFINED — no assumption needed, because no FLOP conversion has happened yet.
+ */
+export function tariffUnits(inp: TariffInputs): Figure {
+  const base = num(param("channel_base_per_turn"));
+  const rate = num(param("channel_rate_g_per_gn"));
+  return figure({
+    value: base * inp.turns + rate * inp.gnClaimed,
+    unit: "channel pay units",
+    buckets: ["DEFINED"],
+    cites: [param("channel_base_per_turn").cite, param("channel_rate_g_per_gn").cite],
+    derivation:
+      `BasePerTurn ${base} x ${inp.turns} turns + rate_G ${rate} x ` +
+      `${inp.gnClaimed.toLocaleString("en-US")} G_n (R12.1d)`,
+  });
+}
+
+/**
+ * The unilateral-close tariff P, in FLOP.
  *
- * Blocks without rateGToFlop. This is the units hole (E.30) and it is not substitutable: the
- * model cannot convert work into money without an assumption, so it declines to.
+ * Blocks without unitToFlop. This is the units hole (E.30) and it is not substitutable: escrow is
+ * denominated in FLOP and the tariff in channel pay units, so comparing them at all requires an
+ * assumption the spec declines to make (R4.4 forbids assuming one). The model declines too.
  */
 export function tariff(inp: TariffInputs): Computed {
-  const rateP = param("channel_rate_g_to_flop");
-  if (inp.rateGToFlop === undefined) {
+  const conv = param("channel_unit_to_flop");
+  if (inp.unitToFlop === undefined) {
     return blocked([
-      { key: rateP.key, cite: rateP.cite, label: "G_n to FLOP conversion rate" },
+      { key: conv.key, cite: conv.cite, label: "channel pay unit to FLOP conversion" },
     ]);
   }
 
-  const base = num(param("channel_base_per_turn"));
+  const units = tariffUnits(inp);
   const assumption: AssumptionRef = {
-    key: rateP.key,
-    value: inp.rateGToFlop,
-    unit: "FLOP per G_n",
-    cite: rateP.cite,
-    label: "G_n to FLOP conversion rate",
+    key: conv.key,
+    value: inp.unitToFlop,
+    unit: "FLOP per channel pay unit",
+    cite: conv.cite,
+    label: "channel pay unit to FLOP conversion",
   };
 
   return figure({
-    value: base * inp.turns + inp.rateGToFlop * inp.gnClaimed,
+    value: units.value * inp.unitToFlop,
     unit: "FLOP",
-    cites: [param("channel_base_per_turn").cite],
+    cites: units.cites,
     assumptions: [assumption],
-    derivation:
-      `BasePerTurn ${base} x ${inp.turns} turns + rate ${inp.rateGToFlop} x ` +
-      `${inp.gnClaimed.toLocaleString("en-US")} G_n (R12.1d)`,
+    derivation: `${units.derivation}; = ${units.value.toLocaleString("en-US")} units x ${inp.unitToFlop} FLOP/unit`,
   });
 }
 

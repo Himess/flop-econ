@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:68ffeb3e48a08ae4)
+// Source: params.yaml (sha256:fd676b48a902cd63)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -29,7 +29,7 @@ export interface Disagreement {
   readonly handling: string;
 }
 
-export const PARAMS_SHA256 = "68ffeb3e48a08ae4";
+export const PARAMS_SHA256 = "fd676b48a902cd63";
 
 export const META = {
   "spec_source": "https://flop.finance/intro/yellowpaper/",
@@ -235,6 +235,12 @@ export const PARAMS: readonly Param[] = [
     "bucket": "DEFINED",
     "cite": "Appendix A; §15.4; R15.4a; D-0437",
     "note": "Sampled stake-weighted without replacement off a BABE-VRF seed from ActiveValidators filtered to effective_minimum_stake() AND is_work_verified_recent. Seed unbiasability is open (E.42)."
+  },
+  {
+    "key": "committee_seat_inclusion_probability",
+    "bucket": "PLANNED",
+    "cite": "R15.4a (mechanism DEFINED); E.42 — Committee seat-capture model [TBD]; tracking #848",
+    "note": "R15.4a fixes the MECHANISM: 100 members sampled \"stake-weighted without replacement\" off a BABE-VRF seed. It does not give a closed form for one validator's inclusion probability, and E.42 says the exact analysis is open — \"no aggregate-stake/binomial bridge\", and it must cover \"unequal stakes, small eligible pools, stake splitting, repeated draws\". The tool uses the first-order approximation p = min(1, committee_size * stake / network_stake), which is exact at the set average and degrades for large stake fractions. Marked PLANNED, never DEFINED, and overridable."
   },
   {
     "key": "validator_rotation_interval_blocks",
@@ -514,10 +520,18 @@ export const PARAMS: readonly Param[] = [
     "note": "integrity_test asserts BasePerTurn >= CTurnFixed so dust turns are not net-negative."
   },
   {
-    "key": "channel_rate_g_to_flop",
+    "key": "channel_rate_g_per_gn",
+    "value": 1,
+    "unit": "channel_pay_units_per_G_n",
+    "bucket": "DEFINED",
+    "cite": "§12.1; R12.1d",
+    "note": "rate_G in the two-part tariff. R12.1d: \"The current implementation uses a numeric rate of one channel pay unit per stored G_n unit.\" Both tariff legs are therefore in channel pay units, not FLOP — see channel_unit_to_flop."
+  },
+  {
+    "key": "channel_unit_to_flop",
     "bucket": "ABSENT",
     "cite": "E.30 — G_n numeric type and unit taxonomy [TBD]; blocking #588",
-    "note": "THE units hole. R12.1d: \"The current implementation uses a numeric rate of one channel pay unit per stored G_n unit; E.30 must ratify its dimensional relation to FLOP's base units and 18 decimals.\" R4.4: \"Until E.30 ratifies, implementations MUST treat the settlement unit as reference F_eff and MUST NOT conflate it with physical FP16/INT8/INT4 ops, energy, or latency.\" Any conversion of work into money is an assumption, not a protocol figure."
+    "note": "THE units hole, and it governs the WHOLE tariff rather than just the work leg. R12.1d gives P = BasePerTurn*n + rate_G*G_claimed with channel_base_per_turn = 1 and rate_G = 1, so P is denominated in channel pay units end to end; E.30 \"must ratify its dimensional relation to FLOP's base units and 18 decimals.\" Escrow E is in FLOP. Comparing P against E therefore needs this conversion, and R4.4 forbids assuming one: \"Until E.30 ratifies, implementations MUST treat the settlement unit as reference F_eff and MUST NOT conflate it with physical FP16/INT8/INT4 ops, energy, or latency.\""
   },
   {
     "key": "escrow_sizing_formula",
@@ -814,7 +828,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
   }
 ];
 
-export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_backend_cost" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
+export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_backend_cost" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
 
 const BY_KEY = new Map<string, Param>(PARAMS.map((p) => [p.key, p]));
 

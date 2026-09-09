@@ -2,25 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
-
-body {
-  background: #fbfbfa;
-  color: #1a1a1a;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+:root{
+  --ground:#0d1f31;
+  --panel:#132b42;
+  --panel-2:#18344f;
+  --rule:#22456a;
+  --ink:#e9f0f6;
+  --ink-2:#a8bed2;
+  --ink-3:#6f8aa4;
+  --defined:#5fd1c4;
+  --planned:#e5b45c;
+  --absent:#f27e6b;
+  color-scheme:dark;
 }
 
-/* Print / PDF export. The assumptions drawer must always be in the output:
-   a result that is shareable without its assumption set defeats the whole tool. */
-@media print {
-  .no-print { display: none !important; }
-  .print-only { display: block !important; }
-  details { display: block !important; }
-  details > summary { display: none; }
-  details[open] > *, details > * { display: revert !important; }
-  body { background: #fff; font-size: 11px; }
-  .page-break { break-before: page; }
-  a[href]:after { content: " (" attr(href) ")"; font-size: 9px; color: #666; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--font-sans),system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.6;
+  padding:0 0 4rem;
+}
+a{color:inherit}
+
+/* Focus is visible everywhere, and follows reading order. */
+:focus-visible{outline:2px solid var(--defined);outline-offset:2px;border-radius:2px}
+
+/* Bucket marks carry colour AND line treatment, so they survive greyscale and
+   colour-blindness: solid = ratified, dashed = deferred, dotted = yours. */
+.b{font-family:var(--font-mono),ui-monospace,monospace;font-size:10.5px;
+   padding:1px 0 2px;margin-left:9px;letter-spacing:.03em;white-space:nowrap}
+.b-def{color:var(--defined);border-bottom:1.5px solid var(--defined)}
+.b-plan{color:var(--planned);border-bottom:1.5px dashed var(--planned)}
+.b-abs{color:var(--absent);border-bottom:1.5px dotted var(--absent)}
+
+/* A utility `display:block` beats the bare `hidden` attribute, which silently left every
+   collapsed note expanded. Force it, then re-open them for print. */
+[hidden]{display:none !important}
+
+.arc{transition:stroke-dasharray .45s ease}
+@media(prefers-reduced-motion:reduce){
+  .arc{transition:none}
+  *{scroll-behavior:auto !important}
+}
+
+/* Export must carry the assumption set. A result without it is the artefact
+   this tool exists to avoid, so the ledger and drawer are forced visible. */
+@media print{
+  .no-print{display:none !important}
+  body{background:#fff;color:#111;font-size:11px;padding:0}
+  .panel-print{background:#fff !important;border-color:#bbb !important}
+  .ledger{position:static !important;break-inside:avoid}
+  .print-block,[hidden].print-block{display:block !important}
+  details{display:block !important}
+  details>summary{display:none}
+  .b-def{color:#0a6b5f}.b-plan{color:#8a6414}.b-abs{color:#a8321c}
+  a[href^="http"]:after{content:" (" attr(href) ")";font-size:9px;color:#666}
 }

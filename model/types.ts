@@ -42,7 +42,10 @@ export interface Blocked {
   readonly missing: readonly string[];
   /** The open items behind them, e.g. "E.47 — DA availability and anti-grinding model [TBD]". */
   readonly cites: readonly string[];
+  /** Action-first: what the user should do. Rendered as the primary line. */
   readonly message: string;
+  /** Why it cannot be defaulted. Secondary. */
+  readonly detail: string;
 }
 
 export type Computed = Figure | Blocked;
@@ -88,15 +91,32 @@ export function figure(args: {
 }
 
 export function blocked(missing: readonly { key: string; cite: string; label: string }[]): Blocked {
+  const labels = missing.map((m) => m.label);
+  // Lead with the fix, not the problem. "Enter a DA cost to compute this" is actionable;
+  // "blocked · E.47" is not. The citation is real but it is secondary detail.
+  const message =
+    labels.length === 1
+      ? `Enter ${indefinite(labels[0]!)} to compute this.`
+      : `Enter ${joinAnd(labels)} to compute this.`;
   return {
     blocked: true,
     missing: missing.map((m) => m.key),
     cites: dedupe(missing.map((m) => m.cite)),
-    message:
-      missing.length === 1
-        ? `Cannot compute: ${missing[0]!.label} is not defined by the spec and was not supplied.`
-        : `Cannot compute: ${missing.length} inputs are not defined by the spec and were not supplied.`,
+    message,
+    detail:
+      labels.length === 1
+        ? `The specification does not define ${labels[0]}, so there is nothing to default to.`
+        : `The specification defines none of these, so there is nothing to default to.`,
   };
+}
+
+function indefinite(label: string): string {
+  return /^[aeiou]/i.test(label) ? `an ${label}` : `a ${label}`;
+}
+
+function joinAnd(xs: readonly string[]): string {
+  if (xs.length <= 1) return xs[0] ?? "";
+  return `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
 }
 
 /**

@@ -223,6 +223,18 @@ parameters:
       filtered to effective_minimum_stake() AND is_work_verified_recent. Seed unbiasability is
       open (E.42).
 
+  - key: committee_seat_inclusion_probability
+    bucket: PLANNED
+    cite: "R15.4a (mechanism DEFINED); E.42 — Committee seat-capture model [TBD]; tracking #848"
+    note: >-
+      R15.4a fixes the MECHANISM: 100 members sampled "stake-weighted without replacement" off a
+      BABE-VRF seed. It does not give a closed form for one validator's inclusion probability, and
+      E.42 says the exact analysis is open — "no aggregate-stake/binomial bridge", and it must
+      cover "unequal stakes, small eligible pools, stake splitting, repeated draws". The tool uses
+      the first-order approximation p = min(1, committee_size * stake / network_stake), which is
+      exact at the set average and degrades for large stake fractions. Marked PLANNED, never
+      DEFINED, and overridable.
+
   - key: validator_rotation_interval_blocks
     value: 2592000
     unit: blocks
@@ -540,15 +552,27 @@ parameters:
     cite: "Appendix A; §12.1 (#719)"
     note: "integrity_test asserts BasePerTurn >= CTurnFixed so dust turns are not net-negative."
 
-  - key: channel_rate_g_to_flop
+  - key: channel_rate_g_per_gn
+    value: 1
+    unit: channel_pay_units_per_G_n
+    bucket: DEFINED
+    cite: "§12.1; R12.1d"
+    note: >-
+      rate_G in the two-part tariff. R12.1d: "The current implementation uses a numeric rate of one
+      channel pay unit per stored G_n unit." Both tariff legs are therefore in channel pay units,
+      not FLOP — see channel_unit_to_flop.
+
+  - key: channel_unit_to_flop
     bucket: ABSENT
     cite: "E.30 — G_n numeric type and unit taxonomy [TBD]; blocking #588"
     note: >-
-      THE units hole. R12.1d: "The current implementation uses a numeric rate of one channel pay
-      unit per stored G_n unit; E.30 must ratify its dimensional relation to FLOP's base units and
-      18 decimals." R4.4: "Until E.30 ratifies, implementations MUST treat the settlement unit as
-      reference F_eff and MUST NOT conflate it with physical FP16/INT8/INT4 ops, energy, or
-      latency." Any conversion of work into money is an assumption, not a protocol figure.
+      THE units hole, and it governs the WHOLE tariff rather than just the work leg. R12.1d gives
+      P = BasePerTurn*n + rate_G*G_claimed with channel_base_per_turn = 1 and rate_G = 1, so P is
+      denominated in channel pay units end to end; E.30 "must ratify its dimensional relation to
+      FLOP's base units and 18 decimals." Escrow E is in FLOP. Comparing P against E therefore
+      needs this conversion, and R4.4 forbids assuming one: "Until E.30 ratifies, implementations
+      MUST treat the settlement unit as reference F_eff and MUST NOT conflate it with physical
+      FP16/INT8/INT4 ops, energy, or latency."
 
   - key: escrow_sizing_formula
     bucket: ABSENT

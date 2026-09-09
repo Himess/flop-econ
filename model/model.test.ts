@@ -20,6 +20,8 @@ import {
   minimumStake,
   operatingCost,
   queueCost,
+  committeePremiumValue,
+  seatRateFromStake,
   slashingLadder,
   specImpliedCost,
   type ValidatorInputs,
@@ -27,6 +29,7 @@ import {
 import {
   closePaths,
   conservationResidual,
+  tariffUnits,
   disputeCost,
   escrowForSlots,
   overReservation,
@@ -67,7 +70,7 @@ describe("params.yaml <-> params.generated.ts", () => {
   it("reading an ABSENT parameter throws rather than returning a number", () => {
     expect(() => num(param("escrow_sizing_formula"))).toThrow(/ABSENT/);
     expect(() => num(param("session_price"))).toThrow(/ABSENT/);
-    expect(() => num(param("channel_rate_g_to_flop"))).toThrow(/ABSENT/);
+    expect(() => num(param("channel_unit_to_flop"))).toThrow(/ABSENT/);
   });
 
   it("covers every ABSENT item the research passes identified", () => {
@@ -295,7 +298,7 @@ describe("validator", () => {
       const fraud = slashingLadder(funded).find((r) => r.rung === "fraud")!;
       expect(fraud.terminal).toBe(true);
       expect(isBlocked(fraud.recoveryDays)).toBe(true);
-      if (isBlocked(fraud.recoveryDays)) expect(fraud.recoveryDays.message).toMatch(/blacklist/);
+      if (isBlocked(fraud.recoveryDays)) expect(fraud.recoveryDays.message + fraud.recoveryDays.detail).toMatch(/blacklist/);
     });
 
     it("recovery blocks when net earnings are non-positive", () => {
@@ -303,7 +306,7 @@ describe("validator", () => {
       const liveness = underwater.find((r) => r.rung === "liveness")!;
       expect(isBlocked(liveness.recoveryDays)).toBe(true);
       if (isBlocked(liveness.recoveryDays))
-        expect(liveness.recoveryDays.message).toMatch(/never recovered/);
+        expect(liveness.recoveryDays.message + liveness.recoveryDays.detail).toMatch(/never recovered/);
     });
 
     it("recovery includes the days out of the set, not just the earning days", () => {
@@ -328,7 +331,7 @@ describe("validator", () => {
 // --------------------------------------------------------------------- agent
 
 describe("agent", () => {
-  const IN = { escrow: 1000, turns: 100, gnClaimed: 50_000, rateGToFlop: 0.001 };
+  const IN = { escrow: 1000, turns: 100, gnClaimed: 50_000, unitToFlop: 0.001 };
 
   it("conservation holds for arbitrary E and P", () => {
     for (const [E, P] of [
@@ -395,11 +398,19 @@ describe("agent", () => {
   });
 
   describe("refusal to compute", () => {
-    it("the tariff blocks without a G_n->FLOP rate, naming E.30", () => {
+    it("the tariff in channel pay units needs no assumption at all", () => {
+      // Both legs are DEFINED (both coefficients are 1); only the FLOP conversion is missing.
+      const u = tariffUnits({ escrow: 1000, turns: 10, gnClaimed: 500 });
+      expect(u.bucket).toBe("DEFINED");
+      expect(u.value).toBe(510);
+      expect(u.unit).toBe("channel pay units");
+    });
+
+    it("the tariff blocks without the channel-unit conversion, naming E.30", () => {
       const t = tariff({ escrow: 1000, turns: 10, gnClaimed: 500 });
       expect(isBlocked(t)).toBe(true);
       if (isBlocked(t)) {
-        expect(t.missing).toEqual(["channel_rate_g_to_flop"]);
+        expect(t.missing).toEqual(["channel_unit_to_flop"]);
         expect(t.cites.join(" ")).toContain("E.30");
       }
     });
@@ -424,7 +435,7 @@ describe("agent", () => {
       expect(isBlocked(t)).toBe(false);
       if (isBlocked(t)) return;
       expect(t.bucket).toBe("ABSENT");
-      expect(t.assumptions[0]!.key).toBe("channel_rate_g_to_flop");
+      expect(t.assumptions[0]!.key).toBe("channel_unit_to_flop");
     });
   });
 

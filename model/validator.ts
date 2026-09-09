@@ -64,6 +64,51 @@ export function baseSeatRate(activeSetSize: number): number {
 }
 
 /**
+ * A validator's committee seat rate implied by its stake.
+ *
+ * R15.4a fixes the mechanism — 100 members sampled "stake-weighted without replacement" — but not
+ * a closed form for one validator's inclusion probability, and E.42 states the exact analysis is
+ * open ("no aggregate-stake/binomial bridge for unequal weights"). This is the first-order
+ * approximation: p = min(1, committee_size x stake / network_stake). It is exact at the set
+ * average and degrades as one stake approaches a large share of the total, so it is bucketed
+ * PLANNED and always overridable.
+ */
+export function seatRateFromStake(stake: number, networkStake: number): Figure {
+  const size = num(param("finality_committee_size"));
+  const p = networkStake > 0 ? Math.min(1, (size * stake) / networkStake) : 0;
+  return figure({
+    value: p,
+    unit: "seat rate",
+    buckets: ["PLANNED"],
+    cites: [param("committee_seat_inclusion_probability").cite],
+    derivation:
+      `min(1, ${size} seats x stake ${stake.toLocaleString("en-US")} / network ` +
+      `${networkStake.toLocaleString("en-US")}) = ${p.toFixed(4)}. First-order only — E.42 is open.`,
+  });
+}
+
+/**
+ * What the finality-committee premium is actually worth to THIS validator, in FLOP/yr.
+ *
+ * Income at its own seat rate minus income at the set-average rate. Zero at the average, by
+ * construction: the 1.1x is a redistribution toward validators seated more often than average,
+ * not free income. See blockRewardIncome for why.
+ */
+export function committeePremiumValue(inp: ValidatorInputs): Figure {
+  const mine = blockRewardIncome(inp);
+  const atAverage = blockRewardIncome({ ...inp, committeeSeatProbability: baseSeatRate(inp.activeSetSize) });
+  return figure({
+    value: mine.value - atAverage.value,
+    unit: "FLOP/year",
+    buckets: [mine.bucket],
+    cites: mine.cites,
+    derivation:
+      `income at your seat rate ${Math.round(mine.value).toLocaleString("en-US")} - income at the ` +
+      `set-average rate ${Math.round(atAverage.value).toLocaleString("en-US")}. Zero at the average.`,
+  });
+}
+
+/**
  * R9.5: the validator pool is split with weight stake_i x (1.1 if i in committee else 1.0).
  *
  * Modelled in expectation over epochs, because the committee is resampled every epoch (R15.4a).
