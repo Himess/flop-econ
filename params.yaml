@@ -38,10 +38,13 @@ meta:
     - https://flop.finance/assets/tokenomics.png - the tokenomics GRAPHIC, sha256 e05656909de1a8a9
     - https://flop.finance/intro/{miner,validator,agent,verification}/ and /
   source_note: >-
-    IMAGE ASSETS ARE PART OF THE PUBLISHED SURFACE. A reconcile that greps page text cannot read a
-    figure rendered inside a PNG, and on 2026-09-10 a superseded version of tokenomics.png carried
-    a total supply and a validator airdrop that contradicted Appendix A. Any future reconcile MUST
-    fetch and LOOK AT the graphics, and pin their hashes. See disagreements.tokenomics_graphic.
+    IMAGE ASSETS ARE PART OF THE PUBLISHED SURFACE, AND ANNOUNCEMENTS ARE AHEAD OF BOTH. A
+    reconcile that greps page text cannot read a figure rendered inside a PNG. Worse, the figures
+    that matter may not be on the site at all: on 2026-09-10 a tokenomics graphic carrying a
+    different total supply and a 4x validator airdrop was published while flop.finance still served
+    the older asset from origin and its teaser page still read "Updated 2026-08-26". Any future
+    reconcile MUST fetch and LOOK AT the graphics, pin their hashes, and treat announcement
+    material as a source that can lead the site. See disagreements.tokenomics_graphic.
   extraction: >-
     yellowpaper.md from the upstream repository, not vendored here - get it from spec_source and
     check it against fetch_sha256.
@@ -181,6 +184,9 @@ parameters:
       buckets and nothing else. Genesis supply is the divisor for token price, so every dollar
       figure the tool printed before this correction was wrong - see disagreements.genesis_supply_fork,
       now marked resolved.
+      A SECOND fork is already open on this same parameter: a tokenomics graphic published
+      2026-09-10 states an airdrop of 4.4bn with validators at 1.20bn. Appendix A remains the value
+      of record; see disagreements.tokenomics_graphic.
 
   - key: genesis_miner_airdrop
     value: 1200000000
@@ -1162,32 +1168,43 @@ parameters:
 # ---------------------------------------------------------------------------------------------
 disagreements:
   - id: tokenomics_graphic
-    resolved: "2026-09-10"
     spec_says: >-
-      Appendix A: genesis_supply = 3,500,000,000 split across four buckets - miners 1,200,000,000,
-      validators 305,505,000, agents 1,200,000,000, reserve 794,495,000 (R9.4, D-0438/D-0435).
-      Year-10 cumulative supply computes to 17,186,624,000.
+      Appendix A: genesis_supply = 3,500,000,000, split across exactly four buckets by R9.4 -
+      miners 1,200,000,000, VALIDATORS 305,505,000, agents 1,200,000,000, reserve 794,495,000
+      (D-0438 / D-0435). Year-10 cumulative supply computes to 17,186,624,000 and the perpetual
+      floor is 0.550% of it.
     downstream_says: >-
-      A superseded version of flop.finance/assets/tokenomics.png stated "18.1bn total supply by
-      year 10", "0.5% terminal inflation / yr", and an Airdrop of 4.4bn (24.3%) broken down as
-      miners 1.20bn, VALIDATORS 1.20bn, agents 1.20bn, reserve 0.80bn. That validator line is
-      roughly 4x Appendix A, and it accounts for the whole 0.9bn gap between 18.1bn and 17.19bn.
+      A FLOP tokenomics graphic published 2026-09-10 states "18.1bn total supply by year 10" and
+      "0.5% terminal inflation / yr", with an Airdrop of 4.4bn (24.3%) split miners 1.20bn /
+      VALIDATORS 1.20bn / agents 1.20bn / reserve 0.80bn. The validator line is ~4x Appendix A and
+      accounts for the entire difference: 1,200,000,000 - 305,505,000 = 894,495,000, and
+      17,186,624,000 + 894,495,000 = 18,081,119,000, i.e. 18.1bn. The graphic is internally
+      consistent; it simply uses a genesis figure R9.4 does not.
     status: >-
-      SUPERSEDED, not live. The asset now served at that URL reads "17.2bn total supply by year 10",
-      "0.6% terminal inflation", Airdrop 3.5bn (20.4%), and an airdrop sub-split of miners 1.20bn /
-      validators 0.31bn / agents 1.20bn / reserve 0.79bn - every figure agreeing with Appendix A and
-      with this tool. The teaser page's own alt text describes the current version.
-      Recorded because the older graphic circulated: anyone holding that screenshot has a validator
-      airdrop roughly 4x too high and a total supply 0.9bn too high.
+      LIVE and UNRESOLVED, and FLOP's own surfaces currently disagree with each other. Verified
+      2026-09-10: flop.finance/assets/tokenomics.png still serves the OLDER graphic (17.2bn, 0.6%,
+      airdrop 3.5bn, validators 0.31bn) - confirmed from origin, not cache, with a unique
+      query string returning cf-cache-status MISS and the same ETag c904a1d2e67ac448a7fe13868cf01999.
+      The /teaser/ page is dated "Updated 2026-08-26" and its alt text describes that older
+      graphic. So the newer 18.1bn figures are NOT on the website as of this check.
+      This is the same shape as the pre-D-0438 genesis fork: a downstream publication leading the
+      normative parameter set. That one was ratified 19 days later.
     quote: >-
-      "// 18.1bn total supply by year 10 // 0.5% terminal inflation / yr ... Airdrop 4.4bn 24.3% -
-      Miners 1.20bn 6.6% - Validators 1.20bn 6.6% - Agents 1.20bn 6.6% - Reserve / Incentives
-      0.80bn 4.4%" (superseded flop.finance tokenomics graphic, marked DRAFT)
-    tracking: "no issue number; both versions carry a preliminary/draft disclaimer"
+      "// 18.1bn total supply by year 10   // 0.5% terminal inflation / yr ... Airdrop 4.4bn 24.3%
+      - Miners 1.20bn 6.6% - Validators 1.20bn 6.6% - Agents 1.20bn 6.6% - Reserve / Incentives
+      0.80bn 4.4%" (FLOP tokenomics graphic, 2026-09-10, marked DRAFT; supplied by the operator,
+      not served from flop.finance at the time of checking)
+    tracking: >-
+      No decision id. Both the graphic and the site carry a preliminary/draft disclaimer. Watch for
+      a D-04xx ratifying a genesis_validator_airdrop above 305,505,000.
     handling: >-
-      Model Appendix A. The live graphic already agrees with it, so there is nothing to reconcile
-      in the numbers - only the record of what circulated. Live asset archived at
-      spec/assets/tokenomics-live-2026-09-10.png, sha256 e05656909de1a8a9.
+      Model Appendix A - 3,500,000,000 and 305,505,000 - because the precedence rule this file
+      follows is the yellow paper's own: "the value of record is always Appendix A". The 4.4bn
+      figure is carried here as the named alternative, exactly as 3,500,000,000 was carried before
+      D-0438 ratified it. If it ratifies, genesis_supply moves to 4,400,000,000 and
+      genesis_validator_airdrop to 1,200,000,000; the tool's break-even valuation would rise a
+      further ~11% at the year-1 anchor. Older graphic archived at
+      spec/assets/tokenomics-live-2026-09-10.png (sha256 e05656909de1a8a9).
 
   - id: v0_5_0_rebase
     spec_says: >-

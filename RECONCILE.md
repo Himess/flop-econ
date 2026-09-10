@@ -8,10 +8,12 @@ backwards. D-0438 ratified 3,500,000,000. Genesis supply is the divisor for toke
 dollar figure the site published was wrong by a measurable amount: **break-even valuation was 16.9%
 too low, implied token price 14.5% too high.** Fixed and deployed.
 
-**On the brief's other claims:** the 18.1bn total and the 1.20bn validator airdrop are real and
-come from the official tokenomics graphic — which a text-only reconcile cannot read, and which my
-first pass therefore dismissed. Both are **superseded**: the asset now served states 17.2bn and a
-0.31bn validator airdrop, agreeing with Appendix A throughout. Recorded, with the method fixed.
+**On the brief's other claims:** the 18.1bn total and the 1.20bn validator airdrop are real, they
+come from a FLOP tokenomics graphic published 2026-09-10, and they are **live and unresolved** —
+the graphic leads Appendix A by roughly 4x on the validator airdrop. My first pass dismissed them
+because a text-only reconcile cannot read a PNG; my second pass had the direction backwards. Both
+are corrected below. **The tool still models Appendix A**, and the 4.4bn figure is carried as the
+named alternative — the same handling 3,500,000,000 got before D-0438 ratified it.
 
 ---
 
@@ -87,13 +89,14 @@ this tool published.
 
 ## 4. Validator airdrop — 305,505,000 against "1.20bn"
 
-> **Corrected after first publication.** My first answer here was "there is no contradiction, this
-> is a misreading of two tables." That was wrong, and wrong in a way my method guaranteed: the
-> claim lives in **`flop.finance/assets/tokenomics.png`**, and I searched page *text*. A grep
-> cannot read a figure rendered inside an image. See §4b.
+> **Corrected twice.** First answer: *"there is no contradiction, this is a misreading of two
+> tables"* — wrong, because a text grep cannot read a figure rendered inside a PNG. Second answer:
+> *"the contradiction is real but superseded"* — also wrong, because I assumed the asset served at
+> `/assets/tokenomics.png` was the current publication. It is not. See §4b.
 
-**Settled: the contradiction was real, in a version of the official graphic that has since been
-replaced. The asset now live agrees with Appendix A.**
+**Settled: the contradiction is real and LIVE. A tokenomics graphic published 2026-09-10 states a
+validator airdrop of 1.20bn against Appendix A's 305,505,000 — and FLOP's own website has not
+caught up with it.**
 
 There is no tokenomics *page* on flop.finance — the sitemap lists ten URLs. The allocation figures
 appear in two places: the `/teaser/` HTML tables, and a graphic embedded on that page. The HTML
@@ -118,11 +121,13 @@ The second table, immediately below, is the genesis breakdown:
 **305,505,000, matching Appendix A exactly.** Its four rows sum to 3,500,000,000 and reproduce
 Appendix A's four buckets, `genesis_reserve` included. Nothing to record.
 
-## 4b. The tokenomics graphic — what my method missed
+## 4b. The tokenomics graphic — a live fork, and what my method missed
 
-`/teaser/` embeds `<img src="/assets/tokenomics.png">`. Two versions are in play.
+`/teaser/` embeds `<img src="/assets/tokenomics.png">`. Two versions are in play, and **the newer
+one is not on the website.**
 
-**Superseded version** (circulating; marked DRAFT):
+**Newer — published 2026-09-10, marked DRAFT** (supplied by the operator; not served from
+flop.finance at the time of checking):
 
 | | |
 |---|---|
@@ -134,7 +139,7 @@ Appendix A's four buckets, `genesis_reserve` included. Nothing to record.
 | — Agents | 1.20bn 6.6% |
 | — Reserve / Incentives | 0.80bn 4.4% |
 
-**Currently served** (sha256 `e05656909de1a8a9`, fetched 2026-09-10, archived at
+**Older — still what flop.finance serves** (sha256 `e05656909de1a8a9`, archived at
 `spec/assets/tokenomics-live-2026-09-10.png`):
 
 | Figure | Live graphic | Appendix A / this tool | Agrees |
@@ -148,17 +153,31 @@ Appendix A's four buckets, `genesis_reserve` included. Nothing to record.
 | — Reserve / Incentives | 0.79bn 4.6% | 794,495,000 | ✓ |
 | Team + Foundation | 2.0bn 11.4% | 1,955,232,000 (R9.3) | ✓ |
 
-The `/teaser/` page's own `alt` text describes the current version — *"rising to 17.2bn … airdrop
-3.5bn (20.4%) … validators 0.31bn"* — so the page and its graphic are consistent today.
+**Evidence that the site has not been updated**, all checked 2026-09-10:
 
-**The brief was right and I was wrong.** The 4× validator discrepancy existed, and the entire
-0.9bn gap between 18.1bn and 17.19bn is that one line: 1,200,000,000 − 305,505,000 = 894,495,000.
-The older graphic was internally consistent — it simply used a 4.4bn genesis instead of R9.4's
-3.5bn, and 0.5% is 94,608,000 over *its* total.
+| Check | Result |
+|---|---|
+| `/assets/tokenomics.png` with a unique query string | `cf-cache-status: MISS` — served from **origin**, not cache |
+| ETag on that origin fetch | `c904a1d2e67ac448a7fe13868cf01999` — the older graphic |
+| Cached edge copy | `Age: 1287081` (about 15 days), `Cache-Control: immutable` |
+| `/teaser/` re-fetched, cache-busted | `cf-cache-status: DYNAMIC` (fresh); page metadata reads **"Updated 2026-08-26"** |
+| That page's `alt` text | *"rising to 17.2bn ... airdrop 3.5bn (20.4%) ... validators 0.31bn"* |
 
-Recorded as the `tokenomics_graphic` disagreement, marked superseded with both versions in their
-own figures, because anyone holding the older screenshot has a validator airdrop roughly four
-times too high.
+The page, its alt text and the asset are all consistent with each other **and with Appendix A** —
+and all three are behind the announcement.
+
+**The brief was right and I was wrong twice.** The 4x validator discrepancy is real and open. The
+whole 0.9bn gap is one line: 1,200,000,000 − 305,505,000 = 894,495,000, and
+17,186,624,000 + 894,495,000 = 18,081,119,000, which rounds to 18.1bn. The newer graphic is
+internally consistent; it uses a genesis figure R9.4 does not, and 0.5% is 94,608,000 over *its*
+own total.
+
+**Recorded as a live `tokenomics_graphic` disagreement, not a resolved one.** The tool continues to
+model Appendix A, because the precedence rule it follows is the yellow paper's own — *"the value of
+record is always Appendix A"* — and 4.4bn carries no ratifying decision. This is the identical
+shape to the genesis fork that preceded D-0438, which took 19 days to ratify. If it ratifies,
+`genesis_supply` becomes 4,400,000,000 and `genesis_validator_airdrop` 1,200,000,000, and the
+break-even valuation rises a further ~11% at the year-1 anchor.
 
 **The method fix.** `meta.published_sources` now lists the image assets explicitly, with a note
 that a text-only reconcile cannot see them, and pins the live graphic's sha256. Any future pass
@@ -205,14 +224,14 @@ rate; the active set drives pool share. They have never been mixed.
 
 ## 7. The 18.1bn question
 
-> **Corrected after first publication.** I originally wrote that 18.1bn "does not appear on any
-> published FLOP page". It appeared in the tokenomics graphic (§4b) — which my text search could
-> not read. The figure is real; it is also superseded.
+> **Corrected.** I first wrote that 18.1bn *"does not appear on any published FLOP page"*, then
+> that it was superseded. Both wrong: it comes from the **newer** graphic (§4b), which my text
+> search could not read and which the website has not yet adopted.
 
-**18.1bn came from the superseded graphic, and it is arithmetically consistent with it.** I fetched
+**18.1bn comes from the 2026-09-10 graphic and is arithmetically consistent with it.** I fetched
 all eight pages in the sitemap and searched their *text* for `18.1`, `18,100,000,000`,
-`terminal inflation` and `0.5%` — zero hits, because the figures are in a PNG. The graphic now
-served states **17.2bn** and **0.6%**.
+`terminal inflation` and `0.5%` — zero hits, because the figures are in a PNG, and because the
+graphic flop.finance still serves states **17.2bn** and **0.6%**.
 
 18.1bn follows from a 4.4bn genesis: 17,186,624,000 + 894,495,000 (the validator-airdrop
 difference) = 18,081,119,000, which rounds to 18.1bn. And 94,608,000 ÷ 18.1bn = 0.523%, the stated
@@ -249,7 +268,9 @@ terminal-inflation cross-check points the same way: `floor_annual_emission` = 94
 of 17.19bn and 0.523% of 18.1bn — the latter is closer to a round 0.5%, which is likely where the
 number came from, but it is not what FLOP published.
 
-**The tool's supply figure needs no correction beyond the genesis fix**, which is applied.
+**The tool's supply figure needs no correction beyond the genesis fix**, which is applied. It
+computes 17,186,624,000 at year 10, matching Appendix A and the graphic the website serves. Were
+4.4bn to ratify, it would become 18,086,624,000.
 
 ## 8. Full parameter diff
 
@@ -321,11 +342,15 @@ No mark needed rebucketing.
   when genesis tokens actually circulate, which is E.38 territory.
 - The **year-1 anchor is a choice**, not a spec figure. It is adjustable and marked.
 
-**A second process failure, and the more interesting one:** the first version of this report
-dismissed a real contradiction because my reconcile reads text and the claim was in an image. I
-reached the right conclusion about the *current* sources by luck of timing, not by method — the
-live graphic happens to agree with Appendix A. Image assets are now in the source hierarchy with
-a pinned hash and an explicit instruction to look at them.
+**Two further process failures, both on the same claim.** The first version of this report
+dismissed a real contradiction because my reconcile reads text and the figures were in an image.
+The second assumed the asset served at a URL was the current publication — it was an older file,
+confirmed from origin, behind a 15-day edge cache. Announcements can lead the website by hours or
+days, and neither a grep nor a fetch of the site will see them.
+
+`meta.published_sources` now lists the image assets with a pinned hash, and `meta.source_note`
+records both failure modes. **`tokenomics_graphic` is an open disagreement**, and the genesis
+airdrop is the parameter to watch.
 
 **Process, stated plainly:** this tool published a wrong divisor on a public site for roughly one
 day. Not a rounding error — 16.9% on the headline figure. It was caught by an exhaustive diff, not
