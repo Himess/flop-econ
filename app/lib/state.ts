@@ -43,7 +43,6 @@ export interface Scenario {
   // The rig, as physical facts. `powerKw` was a single field that asked the user to do this
   // multiplication in their head; now the tool shows the arithmetic.
   nodeWatts: number | undefined;
-  utilisation: number | undefined;
   hardwareUsd: number | undefined;
   amortMonths: number | undefined;
   hostingUsdMonth: number | undefined;
@@ -51,7 +50,6 @@ export interface Scenario {
   sessionsPerDay: number | undefined;
   turnsPerSession: number | undefined;
   tokensPerTurn: number | undefined;
-  storageUsdGbMonth: number | undefined;
   // timeline
   horizonMonths: number;
   bondLockMonths: number | undefined;
@@ -101,8 +99,9 @@ export const EXAMPLE: Scenario = {
   electricityPrice: 0.09,
   // An AlephBFT-class node under the §15.3 SHOULD profile, not a GPU rig. The published spec
   // forbids requiring a GPU of a validator at all (§15.1, MUST NOT).
+  // The reference profile is an ordinary server; §11.3 slashes downtime, so it runs continuously
+  // and there is no duty-cycle term to set.
   nodeWatts: 350,
-  utilisation: 0.8,
   hardwareUsd: 30_000,
   amortMonths: 36,
   hostingUsdMonth: 400,
@@ -112,7 +111,6 @@ export const EXAMPLE: Scenario = {
   sessionsPerDay: 5_000,
   turnsPerSession: 20,
   tokensPerTurn: 800,
-  storageUsdGbMonth: 0.02,
   // 36 months so a two-year lock sits inside the default view. Bond lock and exit are left
   // blank deliberately: neither is a spec rule, and blank models "you keep validating".
   horizonMonths: 36,
@@ -145,11 +143,9 @@ export const ESTIMATE_FIELDS = [
 export const PHYSICAL_FIELDS = [
   "electricityPrice",
   "nodeWatts",
-  "utilisation",
   "hardwareUsd",
   "amortMonths",
   "hostingUsdMonth",
-  "storageUsdGbMonth",
 ] as const satisfies readonly (keyof Scenario)[];
 
 const KEYS: Record<keyof Scenario, string> = {
@@ -172,14 +168,12 @@ const KEYS: Record<keyof Scenario, string> = {
   anchorYear: "ay",
   electricityPrice: "ep",
   nodeWatts: "nw",
-  utilisation: "gu",
   hardwareUsd: "hw",
   amortMonths: "am",
   hostingUsdMonth: "ho",
   sessionsPerDay: "spd",
   turnsPerSession: "tps",
   tokensPerTurn: "tpt",
-  storageUsdGbMonth: "sgb",
   horizonMonths: "hm",
   bondLockMonths: "bl",
   exitAtMonth: "ex",
@@ -275,14 +269,12 @@ export function cleared(): Scenario {
     anchorYear: 1,
     electricityPrice: undefined,
     nodeWatts: undefined,
-    utilisation: undefined,
     hardwareUsd: undefined,
     amortMonths: undefined,
     hostingUsdMonth: undefined,
     sessionsPerDay: undefined,
     turnsPerSession: undefined,
     tokensPerTurn: undefined,
-    storageUsdGbMonth: undefined,
     horizonMonths: 36,
     bondLockMonths: undefined,
     exitAtMonth: undefined,

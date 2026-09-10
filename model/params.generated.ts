@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:ea03d758b458f136)
+// Source: params.yaml (sha256:20bbc66d2501172a)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -31,7 +31,7 @@ export interface Disagreement {
   readonly resolved?: string;
 }
 
-export const PARAMS_SHA256 = "ea03d758b458f136";
+export const PARAMS_SHA256 = "20bbc66d2501172a";
 
 export const META = {
   "spec_source": "https://github.com/flop-labs/yellowpaper (yellowpaper.md, main)",
@@ -713,8 +713,8 @@ export const PARAMS: readonly Param[] = [
   {
     "key": "da_storage_price_usd_gb_month",
     "bucket": "ABSENT",
-    "cite": "outside the protocol - the operator's own hosting contract",
-    "note": "Not a spec figure and never will be. R5.3c/§15.3: the duty is \"funded by reward share, no per-byte fee\", so what a validator pays for storage is a fact about their provider."
+    "cite": "outside the protocol; superseded as an input 2026-09-10",
+    "note": "NO LONGER ASKED FOR. §15.3's reference profile provisions \"4 TB enterprise NVMe (chain state plus DA custody under §5.3 retention)\" and \"a 1 Gbps symmetric UNMETERED link\" - so the disk and the serving are bought with the machine. Charging a per-GB-month rental on top of the hardware the operator already paid for is double-counting, and it invited them to picture object storage they do not need. The tool now reports the duty as a fraction of that 4 TB instead. Kept as a record of a question that turned out to be the wrong question."
   },
   {
     "key": "da_bandwidth_volume",

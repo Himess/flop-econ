@@ -20,7 +20,7 @@ import { annualCostUsd, forward, GENESIS, reverse, tokenPrice, type CostInputs }
 import {
   committeeGateDuty,
   daBytesPerSession,
-  daStorageUsdYear,
+  daShareOfProfile,
   HOURS_PER_YEAR,
   rigPowerKw,
   validatorDaGb,
@@ -67,17 +67,10 @@ export function ValidatorPanel({
   const stakeShare = s.stake && s.networkStake ? s.stake / s.networkStake : 0;
   const sessionBytes = useMemo(() => daBytesPerSession(traffic), [traffic]);
   const daGb = useMemo(() => validatorDaGb(traffic, stakeShare), [traffic, stakeShare]);
-  const daUsd = useMemo(
-    () => daStorageUsdYear(traffic, stakeShare, s.storageUsdGbMonth),
-    [traffic, stakeShare, s.storageUsdGbMonth],
-  );
+  const daShare = useMemo(() => daShareOfProfile(traffic, stakeShare), [traffic, stakeShare]);
   const powerKw = useMemo(
-    () =>
-      rigPowerKw({
-        ...(s.nodeWatts === undefined ? {} : { nodeWatts: s.nodeWatts }),
-        ...(s.utilisation === undefined ? {} : { utilisation: s.utilisation }),
-      }),
-    [s.nodeWatts, s.utilisation],
+    () => rigPowerKw({ ...(s.nodeWatts === undefined ? {} : { nodeWatts: s.nodeWatts }) }),
+    [s.nodeWatts],
   );
   const gate = useMemo(() => committeeGateDuty(), []);
 
@@ -118,9 +111,8 @@ export function ValidatorPanel({
       hardwareUsd: s.hardwareUsd,
       amortMonths: s.amortMonths,
       hostingUsdMonth: s.hostingUsdMonth,
-      ...(isBlocked(daUsd) ? {} : { daStorageUsdYear: daUsd.value }),
     }),
-    [s.electricityPrice, powerKw, s.hardwareUsd, s.amortMonths, s.hostingUsdMonth, daUsd],
+    [s.electricityPrice, powerKw, s.hardwareUsd, s.amortMonths, s.hostingUsdMonth],
   );
 
   const price = useMemo(() => tokenPrice(valuationInputs, "announced"), [valuationInputs]);
@@ -134,19 +126,20 @@ export function ValidatorPanel({
    * minus the DA component, which is exact because `annualCostUsd` adds them.
    */
   const costLegs = useMemo(() => {
-    if (isBlocked(usdCost) || isBlocked(daUsd) || isBlocked(price) || price.value <= 0) return null;
+    if (isBlocked(usdCost) || isBlocked(price) || price.value <= 0) return null;
     const refs: AssumptionRef[] = [
       ...(isBlocked(powerKw) ? [] : powerKw.assumptions),
       ...usdCost.assumptions.filter((a) => a.key !== "power_draw_kw"),
-      ...daUsd.assumptions,
     ];
     const seen = new Set<string>();
     return {
-      daFlop: daUsd.value / price.value,
-      rigFlop: (usdCost.value - daUsd.value) / price.value,
+      // DA custody and serving are inside the §15.3 profile the operator already bought, so the
+      // DA leg carries no separate dollars. It stays a leg because §15.3 names it one.
+      daFlop: 0,
+      rigFlop: usdCost.value / price.value,
       refs: refs.filter((r) => (seen.has(r.key) ? false : (seen.add(r.key), true))),
     };
-  }, [usdCost, daUsd, price, powerKw]);
+  }, [usdCost, price, powerKw]);
 
   const validator: ValidatorInputs = useMemo(
     () => ({
@@ -182,20 +175,13 @@ export function ValidatorPanel({
    * figure, on the cash-flow clock rather than the accounting one.
    */
   const monthlyCostUsd = useMemo(() => {
-    if (
-      s.electricityPrice === undefined ||
-      isBlocked(powerKw) ||
-      s.hostingUsdMonth === undefined ||
-      isBlocked(daUsd)
-    ) {
+    if (s.electricityPrice === undefined || isBlocked(powerKw) || s.hostingUsdMonth === undefined) {
       return undefined;
     }
     return (
-      (s.electricityPrice * powerKw.value * HOURS_PER_YEAR) / MONTHS_PER_YEAR +
-      s.hostingUsdMonth +
-      daUsd.value / MONTHS_PER_YEAR
+      (s.electricityPrice * powerKw.value * HOURS_PER_YEAR) / MONTHS_PER_YEAR + s.hostingUsdMonth
     );
-  }, [s.electricityPrice, powerKw, s.hostingUsdMonth, daUsd]);
+  }, [s.electricityPrice, powerKw, s.hostingUsdMonth]);
 
   const timelineInputs = useMemo(
     () => ({
@@ -240,7 +226,6 @@ export function ValidatorPanel({
     if (!isBlocked(powerKw)) add(powerKw.assumptions);
     if (!isBlocked(price)) add(price.assumptions);
     if (!isBlocked(usdCost)) add(usdCost.assumptions);
-    if (!isBlocked(daUsd)) add(daUsd.assumptions);
     onAssumptions(a);
   }, [validator, price, usdCost, onAssumptions]);
 
@@ -301,22 +286,16 @@ export function ValidatorPanel({
 
       <Group
         title="Your hardware"
-        note={`No GPU: §15.1 forbids requiring one. Reference profile ${int(gate.profile.cores)} cores, ${int(gate.profile.ramGb)} GB, ${int(gate.profile.nvmeTb)} TB, ${int(gate.profile.linkGbps)} Gbps unmetered.`}
+        note={`No GPU — §15.1 forbids requiring one. The §15.3 profile is ${int(gate.profile.cores)} cores, ${int(gate.profile.ramGb)} GB, ${int(gate.profile.nvmeTb)} TB NVMe and a ${int(gate.profile.linkGbps)} Gbps unmetered link, which already covers DA custody and serving.`}
       >
         <Inputs>
           <Field
             id="v-watts"
             label="Node draw"
             suffix="W"
+            grouped
             value={s.nodeWatts === undefined ? "" : String(s.nodeWatts)}
             onChange={(v) => set({ nodeWatts: v === "" ? undefined : Number(v) })}
-          />
-          <Field
-            id="v-util"
-            label="Duty cycle"
-            suffix="0-1"
-            value={s.utilisation === undefined ? "" : String(s.utilisation)}
-            onChange={(v) => set({ utilisation: v === "" ? undefined : Number(v) })}
           />
           <Field
             id="v-elec2"
@@ -327,57 +306,34 @@ export function ValidatorPanel({
           />
           <Field
             id="v-hw"
-            label="Hardware"
+            label="Machine, one-off"
             suffix="USD"
+            grouped
             value={s.hardwareUsd === undefined ? "" : String(s.hardwareUsd)}
             onChange={(v) => set({ hardwareUsd: v === "" ? undefined : Number(v) })}
           />
           <Field
             id="v-host"
-            label="Hosting"
-            suffix="USD/mo"
+            label="Colo + bandwidth"
+            suffix="USD/month"
+            grouped
             value={s.hostingUsdMonth === undefined ? "" : String(s.hostingUsdMonth)}
             onChange={(v) => set({ hostingUsdMonth: v === "" ? undefined : Number(v) })}
-          />
-          <Field
-            id="v-sgb"
-            label="Storage price"
-            suffix="USD/GB-mo"
-            value={s.storageUsdGbMonth === undefined ? "" : String(s.storageUsdGbMonth)}
-            onChange={(v) => set({ storageUsdGbMonth: v === "" ? undefined : Number(v) })}
           />
         </Inputs>
       </Group>
 
-      <Group title="Your estimates" note="Everything the specification has no view on, and nothing else.">
+      <Group
+        title="Your estimate"
+        note="One figure the specification has no view on, and it moves every dollar on this page."
+      >
         <Inputs>
           <Field
-            id="v-spd"
-            label="Network sessions"
-            suffix="per day"
-            assumed
-            value={s.sessionsPerDay === undefined ? "" : String(s.sessionsPerDay)}
-            onChange={(v) => set({ sessionsPerDay: v === "" ? undefined : Number(v) })}
-          />
-          <Field
-            id="v-tps"
-            label="Turns per session"
-            assumed
-            value={s.turnsPerSession === undefined ? "" : String(s.turnsPerSession)}
-            onChange={(v) => set({ turnsPerSession: v === "" ? undefined : Number(v) })}
-          />
-          <Field
-            id="v-tpt"
-            label="Tokens per turn"
-            assumed
-            value={s.tokensPerTurn === undefined ? "" : String(s.tokensPerTurn)}
-            onChange={(v) => set({ tokensPerTurn: v === "" ? undefined : Number(v) })}
-          />
-          <Field
             id="v-val"
-            label="Valuation"
+            label="Network valuation"
             suffix="USD"
             assumed
+            grouped
             value={s.valuationUsd === undefined ? "" : String(s.valuationUsd)}
             onChange={(v) => set({ valuationUsd: v === "" ? undefined : Number(v) })}
           />
@@ -400,11 +356,11 @@ export function ValidatorPanel({
           suffix="GB"
         />
         <Line
-          label="DA storage cost"
-          result={daUsd}
+          label="Share of the profile's 4 TB"
+          result={daShare}
           docs={ANCHORS.daBytes}
-          mark="your storage price"
-          suffix="USD/yr"
+          mark="§15.3 profile"
+          suffix="of the disk"
         />
         <Line label="Node draw" result={powerKw} docs={ANCHORS.operatingCost} mark="your hardware" suffix="kW" />
         <Line
@@ -445,6 +401,41 @@ export function ValidatorPanel({
             Which duties
           </a>
         </p>
+
+        {/*
+          These three used to sit on the front page as headline estimates. They earn a place beside
+          the figure they drive and nowhere else: the whole DA duty is a fraction of one disk, so
+          moving them by three orders of magnitude changes the dollar answer by nothing. Leaving
+          them up front implied they mattered as much as the valuation, which is false.
+        */}
+        <div className="mt-4">
+          <Inputs bare>
+            <Field
+              id="v-spd"
+              label="Network sessions"
+              suffix="per day"
+              assumed
+              grouped
+              value={s.sessionsPerDay === undefined ? "" : String(s.sessionsPerDay)}
+              onChange={(v) => set({ sessionsPerDay: v === "" ? undefined : Number(v) })}
+            />
+            <Field
+              id="v-tps"
+              label="Turns per session"
+              assumed
+              value={s.turnsPerSession === undefined ? "" : String(s.turnsPerSession)}
+              onChange={(v) => set({ turnsPerSession: v === "" ? undefined : Number(v) })}
+            />
+            <Field
+              id="v-tpt"
+              label="Tokens per turn"
+              assumed
+              grouped
+              value={s.tokensPerTurn === undefined ? "" : String(s.tokensPerTurn)}
+              onChange={(v) => set({ tokensPerTurn: v === "" ? undefined : Number(v) })}
+            />
+          </Inputs>
+        </div>
       </Drawer>
 
       {/* ------------------------------------------------------------------ the answer */}

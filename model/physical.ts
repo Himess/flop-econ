@@ -162,38 +162,30 @@ export function validatorDaGb(t: DaTraffic, stakeShare: number): Computed {
   });
 }
 
-/** Annual USD cost of that storage, at the operator's own per-GB-month price. */
-export function daStorageUsdYear(
-  t: DaTraffic,
-  stakeShare: number,
-  usdPerGbMonth?: number,
-): Computed {
+/**
+ * How much of the reference profile's disk the DA duty actually uses.
+ *
+ * There is no separate storage bill to model. §15.3's profile provisions "4 TB enterprise NVMe
+ * (chain state plus DA custody under §5.3 retention)" and "a 1 Gbps symmetric UNMETERED link" —
+ * so the disk is bought with the machine and the serving runs over a flat link. Asking an operator
+ * for a per-GB-month rental price on top of the hardware they already bought is double-counting,
+ * and it invites them to picture object storage they do not need.
+ *
+ * What is worth showing is the ratio, because the finding is how small it is.
+ */
+export function daShareOfProfile(t: DaTraffic, stakeShare: number): Computed {
   const gb = validatorDaGb(t, stakeShare);
   if ("blocked" in gb) return gb;
-  const p = param("da_storage_price_usd_gb_month");
-  if (usdPerGbMonth === undefined || !(usdPerGbMonth >= 0)) {
-    return blocked([{ key: p.key, cite: p.cite, label: "your storage price per GB-month" }]);
-  }
-
+  const profileGb = num(param("validator_ref_nvme_tb")) * 1e3;
   return figure({
-    value: gb.value * usdPerGbMonth * MONTHS_PER_YEAR,
-    unit: "USD/year",
+    value: gb.value / profileGb,
+    unit: "fraction of the reference disk",
     buckets: [gb.bucket],
-    cites: gb.cites,
-    assumptions: [
-      ...gb.assumptions,
-      {
-        key: p.key,
-        value: usdPerGbMonth,
-        unit: "USD/GB-month",
-        cite: p.cite,
-        label: "storage price",
-        kind: "physical",
-      },
-    ],
+    cites: [param("validator_ref_nvme_tb").cite, ...gb.cites],
+    assumptions: gb.assumptions,
     derivation:
-      `${gb.value.toFixed(2)} GB x $${usdPerGbMonth}/GB-month x ${MONTHS_PER_YEAR}. ` +
-      `Egress is NOT included: E.47 leaves repair bandwidth and audit timing open.`,
+      `${gb.value.toFixed(3)} GB / ${profileGb.toLocaleString("en-US")} GB. The §15.3 profile buys ` +
+      `the disk outright for "chain state plus DA custody", so there is no per-GB bill to add.`,
   });
 }
 
@@ -205,14 +197,17 @@ export function daStorageUsdYear(
  * This was a GPU rig — cards, draw per card, utilisation — because the draft this tool was first
  * built against routed committee eligibility through "a calibrated miner backend". The published
  * §15.1 forbids that reading: a validator function "MUST NOT require executing inference,
- * producing PoUI proofs, or owning a GPU or TEE." So the machine is a node, and the question is
- * what it draws.
+ * producing PoUI proofs, or owning a GPU or TEE." So the machine is a node.
+ *
+ * There is no duty-cycle term either, and there should never have been one. §11.3 slashes a
+ * validator 1% and jails it after 300 blocks offline, then 5% and kicks it past 24 hours — the
+ * protocol requires the machine to be up. Asking for a draw AND a duty cycle asked the same
+ * question twice and invited a number below 1 that the slashing table forbids. One field: what the
+ * node draws, continuously.
  */
 export interface Rig {
-  /** Continuous draw of the whole node, watts. */
+  /** Continuous draw of the whole node, watts. Always-on is enforced (§11.3 V1). */
   nodeWatts?: number;
-  /** Expected duty cycle, 0..1. The operator's decision, not a spec figure. */
-  utilisation?: number;
 }
 
 /**
@@ -243,23 +238,16 @@ export function rigPowerKw(r: Rig): Computed {
     return v;
   };
   const watts = need(r.nodeWatts, "node_watts", "node draw");
-  const util = need(r.utilisation, "node_utilisation", "expected duty cycle");
   if (missing.length > 0) return blocked(missing);
-  if (util > 1) {
-    return blocked([
-      { key: "node_utilisation", cite: "your hardware", label: "a duty cycle between 0 and 1" },
-    ]);
-  }
 
   return figure({
-    value: (watts * util) / WATTS_PER_KW,
+    value: watts / WATTS_PER_KW,
     unit: "kW",
     cites: [param("validator_hardware_spec").cite],
     assumptions: [
       { key: "node_watts", value: watts, unit: "W", cite: "your hardware", label: "node draw", kind: "physical" },
-      { key: "node_utilisation", value: util, unit: "fraction", cite: "your decision", label: "expected duty cycle", kind: "physical" },
     ],
-    derivation: `${watts} W x ${(util * 1e2).toFixed(0)}% / ${WATTS_PER_KW}`,
+    derivation: `${watts} W / ${WATTS_PER_KW}. Continuous — §11.3 slashes downtime, so the node is up.`,
   });
 }
 

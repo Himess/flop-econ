@@ -217,14 +217,6 @@ export interface CostInputs {
   amortMonths?: number;
   /** Hosting or colocation, USD per month. */
   hostingUsdMonth?: number;
-  /**
-   * DA storage, USD per year — derived from network traffic by `physical.daStorageUsdYear`.
-   *
-   * Required, not optional-with-zero. §15.3 names DA store-and-serve one of "the two heavy legs";
-   * a USD cost model that silently omits it is wrong the same way the FLOP-denominated version
-   * was. Egress is deliberately NOT in here: E.47 leaves repair bandwidth and audit timing open.
-   */
-  daStorageUsdYear?: number;
 }
 
 const HOURS_PER_YEAR = 24 * 365;
@@ -245,7 +237,6 @@ export function annualCostUsd(c: CostInputs): Computed {
   const hw = need(c.hardwareUsd, "hardware_cost_usd", "hardware cost");
   const months = need(c.amortMonths, "amortisation_months", "amortisation period");
   const hosting = need(c.hostingUsdMonth, "hosting_usd_month", "hosting cost");
-  const daStorage = need(c.daStorageUsdYear, "da_storage_usd_year", "DA storage cost");
   if (missing.length > 0) return blocked(missing);
   if (months <= 0) {
     return blocked([
@@ -270,15 +261,15 @@ export function annualCostUsd(c: CostInputs): Computed {
   ];
 
   return figure({
-    value: energy + amort + host + daStorage,
+    value: energy + amort + host,
     unit: "USD/year",
     cites: [],
     assumptions,
     derivation:
       `energy ${Math.round(energy).toLocaleString("en-US")} (${kw} kW x ${HOURS_PER_YEAR.toLocaleString("en-US")} h x $${price}) ` +
       `+ amortisation ${Math.round(amort).toLocaleString("en-US")} ($${hw.toLocaleString("en-US")} over ${months} months) ` +
-      `+ hosting ${Math.round(host).toLocaleString("en-US")}` +
-      `+ DA storage ${Math.round(daStorage).toLocaleString("en-US")} (derived; egress excluded, E.47)`,
+      `+ hosting ${Math.round(host).toLocaleString("en-US")}. DA custody and serving are inside ` +
+      `the §15.3 profile — its 4 TB NVMe and 1 Gbps unmetered link — so there is no separate line.`,
   });
 }
 

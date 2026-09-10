@@ -15,7 +15,8 @@ import { isBlocked, type AssumptionRef } from "@/model/types";
 import { auto, pct } from "../lib/format";
 import { ANCHORS, href } from "../lib/docs";
 import type { Scenario } from "../lib/state";
-import { Answers, Block, Drawer, Field, Headline, Inputs, Line, Mark } from "./Marks";
+import { Answers, Block, Card, Drawer, Field, Headline, Inputs, Line, Mark } from "./Marks";
+import { PathChart } from "./PathChart";
 
 /**
  * The table's column is "you recover", so cooperative settle is a truthful 0 — and it sits three
@@ -129,7 +130,24 @@ export function AgentPanel({
       </p>
 
       {/* ------------------------------------------------------------------ the table */}
-      <Block title="Close-path outcomes" note="Which path resolves decides what you recover.">
+      <div className="mt-10">
+        <Card
+          title="What you recover, by close path"
+          aside={
+            <a
+              href={href(ANCHORS.closePaths)}
+              className="underline decoration-dotted underline-offset-[3px]"
+              style={{ color: "var(--ink-3)" }}
+            >
+              Why cooperative settle returns nothing
+            </a>
+          }
+        >
+          <PathChart paths={paths} escrow={s.escrow ?? 0} />
+        </Card>
+      </div>
+
+      <Block title="The same paths, with their citations" note="Which path resolves decides what you recover.">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>

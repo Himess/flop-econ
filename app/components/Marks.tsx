@@ -7,6 +7,7 @@
  * one-line mark that links into `/docs`; the explanation lives there. A mark without a destination
  * is a regression, so `docs` is required on every Mark that carries a citation.
  */
+import { useState } from "react";
 import { isBlocked, type Bucket, type Computed } from "@/model/types";
 import { href, type AnchorId } from "../lib/docs";
 import { auto } from "../lib/format";
@@ -161,6 +162,7 @@ export function Field({
   suffix,
   assumed,
   placeholder,
+  grouped,
 }: {
   id: string;
   label: string;
@@ -169,7 +171,20 @@ export function Field({
   suffix?: string;
   assumed?: boolean;
   placeholder?: string;
+  /**
+   * Show thousands separators while the field is not being typed in.
+   *
+   * `300000000` is nine digits nobody counts correctly at a glance; `300,000,000` is read in one.
+   * Only while unfocused, because grouping a value as it is typed fights the caret — so the
+   * separators appear on blur and vanish the moment you click in.
+   */
+  grouped?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const shown =
+    grouped && !editing && value !== "" && Number.isFinite(Number(value))
+      ? Number(value).toLocaleString("en-US")
+      : value;
   return (
     <div>
       <label htmlFor={id} className="mb-1 block text-[11.5px]" style={{ color: "var(--ink-3)" }}>
@@ -180,9 +195,12 @@ export function Field({
         <input
           id={id}
           inputMode="decimal"
-          value={value}
+          value={shown}
           placeholder={placeholder ?? (assumed ? "yours" : undefined)}
-          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setEditing(true)}
+          onBlur={() => setEditing(false)}
+          // Separators are display only; a pasted "300,000,000" still parses.
+          onChange={(e) => onChange(e.target.value.replace(/,/g, ""))}
           // min-w-0 rather than w-full: a flex item at 100% width pushes its unit label off the
           // right edge in a two-column phone grid, which is how "FLOP/yr" got clipped.
           className="min-w-0 flex-1 rounded-[3px] px-2.5 py-2 font-mono text-[13px]"

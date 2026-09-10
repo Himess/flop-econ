@@ -9,7 +9,7 @@ import {
   COMMITTEE_GATE,
   committeeGateDuty,
   daBytesPerSession,
-  daStorageUsdYear,
+  daShareOfProfile,
   merklePathLength,
   rigPowerKw,
   RETENTION_DAYS,
@@ -126,28 +126,36 @@ describe("the validator's share", () => {
     expect(gb).toBeLessThan(100);
   });
 
-  it("costs cents per year at an ordinary storage price", () => {
-    const usd = value(daStorageUsdYear(TRAFFIC, 1 / 200, 0.02));
-    expect(usd).toBeLessThan(1);
-  });
-
-  it("blocks without a storage price rather than assuming one", () => {
-    expect(isBlocked(daStorageUsdYear(TRAFFIC, 1 / 200, undefined))).toBe(true);
+  /**
+   * There is no separate storage bill. §15.3's reference profile provisions "4 TB enterprise NVMe
+   * (chain state plus DA custody under §5.3 retention)", so the disk is bought with the machine.
+   * The useful figure is how little of it the duty uses.
+   */
+  it("is a rounding fraction of the reference profile's disk", () => {
+    const share = value(daShareOfProfile(TRAFFIC, 1 / 200));
+    expect(share).toBeLessThan(0.001);
+    const heavy = value(daShareOfProfile({ ...TRAFFIC, sessionsPerDay: 1_000_000 }, 1 / 200));
+    expect(heavy).toBeLessThan(0.01);
   });
 });
 
 describe("the node", () => {
-  it("derives kW from node draw and duty cycle", () => {
-    expect(value(rigPowerKw({ nodeWatts: 400, utilisation: 0.5 }))).toBeCloseTo(0.2, 9);
+  it("derives kW from a single continuous draw", () => {
+    expect(value(rigPowerKw({ nodeWatts: 400 }))).toBeCloseTo(0.4, 9);
   });
 
-  it("refuses a duty cycle above one", () => {
-    expect(isBlocked(rigPowerKw({ nodeWatts: 400, utilisation: 1.5 }))).toBe(true);
+  /**
+   * There is deliberately no duty-cycle term. §11.3 slashes 1% and jails after 300 blocks offline,
+   * 5% and kicks past 24 hours — the protocol requires the node to be up, so a fraction below 1
+   * models something the slashing table forbids.
+   */
+  it("has no duty-cycle term to get wrong", () => {
+    expect(param("slash_extended_downtime_percent").value).toBe(5);
+    expect(value(rigPowerKw({ nodeWatts: 350 }))).toBeCloseTo(0.35, 9);
   });
 
-  it("blocks on each missing physical figure", () => {
-    expect(isBlocked(rigPowerKw({ utilisation: 0.5 }))).toBe(true);
-    expect(isBlocked(rigPowerKw({ nodeWatts: 400 }))).toBe(true);
+  it("blocks without a draw rather than assuming one", () => {
+    expect(isBlocked(rigPowerKw({}))).toBe(true);
   });
 });
 
