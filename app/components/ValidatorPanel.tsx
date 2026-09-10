@@ -74,11 +74,10 @@ export function ValidatorPanel({
   const powerKw = useMemo(
     () =>
       rigPowerKw({
-        ...(s.gpuCount === undefined ? {} : { gpuCount: s.gpuCount }),
-        ...(s.wattsPerGpu === undefined ? {} : { wattsPerGpu: s.wattsPerGpu }),
+        ...(s.nodeWatts === undefined ? {} : { nodeWatts: s.nodeWatts }),
         ...(s.utilisation === undefined ? {} : { utilisation: s.utilisation }),
       }),
-    [s.gpuCount, s.wattsPerGpu, s.utilisation],
+    [s.nodeWatts, s.utilisation],
   );
   const gate = useMemo(() => committeeGateDuty(), []);
 
@@ -297,25 +296,21 @@ export function ValidatorPanel({
       </Inputs>
       </Group>
 
-      <Group title="Your hardware" note="Physical facts, so the tool derives the cost rather than asking for it.">
+      <Group
+        title="Your hardware"
+        note={`No GPU: §15.1 forbids requiring one. Reference profile ${int(gate.profile.cores)} cores, ${int(gate.profile.ramGb)} GB, ${int(gate.profile.nvmeTb)} TB, ${int(gate.profile.linkGbps)} Gbps unmetered.`}
+      >
         <Inputs>
           <Field
-            id="v-gpus"
-            label="GPUs"
-            suffix="cards"
-            value={s.gpuCount === undefined ? "" : String(s.gpuCount)}
-            onChange={(v) => set({ gpuCount: v === "" ? undefined : Number(v) })}
-          />
-          <Field
             id="v-watts"
-            label="Draw per card"
+            label="Node draw"
             suffix="W"
-            value={s.wattsPerGpu === undefined ? "" : String(s.wattsPerGpu)}
-            onChange={(v) => set({ wattsPerGpu: v === "" ? undefined : Number(v) })}
+            value={s.nodeWatts === undefined ? "" : String(s.nodeWatts)}
+            onChange={(v) => set({ nodeWatts: v === "" ? undefined : Number(v) })}
           />
           <Field
             id="v-util"
-            label="Utilisation"
+            label="Duty cycle"
             suffix="0-1"
             value={s.utilisation === undefined ? "" : String(s.utilisation)}
             onChange={(v) => set({ utilisation: v === "" ? undefined : Number(v) })}
@@ -408,7 +403,7 @@ export function ValidatorPanel({
           mark="your storage price"
           suffix="USD/yr"
         />
-        <Line label="Rig draw" result={powerKw} docs={ANCHORS.operatingCost} mark="your hardware" suffix="kW" />
+        <Line label="Node draw" result={powerKw} docs={ANCHORS.operatingCost} mark="your hardware" suffix="kW" />
         <Line
           label="Total operating cost"
           result={usdCost}
@@ -424,8 +419,8 @@ export function ValidatorPanel({
             Committee gate
           </span>
           <span className="font-mono text-[13.5px]" style={{ fontFamily: "var(--font-mono)" }}>
-            1 proof / {int(gate.recencyHours)} h
-            <Mark bucket="DEFINED" label="R15.4a" docs={ANCHORS.committeeGate} />
+            1 accepted duty / {int(gate.recencyHours)} h
+            <Mark bucket="DEFINED" label="R15.4c" docs={ANCHORS.committeeGate} />
           </span>
         </div>
         <div
@@ -433,19 +428,18 @@ export function ValidatorPanel({
           style={{ borderBottom: "1px solid var(--rule)" }}
         >
           <span className="text-[13.5px]" style={{ color: "var(--ink-2)" }}>
-            Calibration renewal
+            GPUs required
           </span>
           <span className="font-mono text-[13.5px]" style={{ fontFamily: "var(--font-mono)" }}>
-            {int(gate.minVerifiedJobs)} jobs, {pct(gate.utilisationFloor)} of your own capacity,
-            every {int(gate.leaseDays)} d
-            <Mark bucket="DEFINED" label="R7.2" docs={ANCHORS.committeeGate} />
+            {int(gate.gpusRequired)}
+            <Mark bucket="DEFINED" label="§15.1 MUST NOT" docs={ANCHORS.committeeGate} />
           </span>
         </div>
         <p className="mt-3 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-          The specification sets no absolute hardware minimum — the only quantity floor is relative
-          to your own capacity.{" "}
+          Any of {int(gate.duties)} accepted verification duties refreshes the seat, and prover
+          credit explicitly does not.{" "}
           <a href={href(ANCHORS.committeeGate)} className="underline decoration-dotted underline-offset-2">
-            What that means
+            Which duties
           </a>
         </p>
       </Drawer>

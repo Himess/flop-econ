@@ -284,8 +284,7 @@ export default function DocsPage() {
         style={{ borderTop: "1px solid var(--rule)", color: "var(--ink-3)" }}
       >
         <p className="max-w-[70ch]">
-          The yellow paper is a draft on roughly a weekly cadence; this inventory is current as of{" "}
-          {String(META.fetched)}. Session price, token price and network demand are your inputs — the
+          This inventory is built against the initial public release, fetched {String(META.fetched)}. Session price, token price and network demand are your inputs — the
           specification has no view on them and neither does this. Not financial advice, not a
           forecast.
         </p>

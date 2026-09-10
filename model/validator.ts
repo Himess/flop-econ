@@ -5,8 +5,8 @@
  * apportionment is normatively specified (R9.5 — pool share by stake with a 1.1x
  * finality-committee multiplier), where the miner's is an open item (E.44). Everything on the
  * revenue side below is DEFINED. The cost side has one DEFINED anchor (the spec's own implied
- * figure, §2.2) and two ABSENT legs the user must supply: DA volume (E.47) and the GPU backend
- * the committee gate requires (no sizing given anywhere).
+ * figure, §2.2) and two derived legs: DA storage, sized from the spec's own byte rules, and the
+ * node itself. Neither is typed any more — see model/physical.ts.
  */
 import { param } from "./params.generated";
 import { BLOCKS_PER_YEAR, blocksToDays, rolePoolPerYear } from "./emission";
@@ -52,8 +52,12 @@ export interface ValidatorInputs {
    */
   daCostPerYear?: number;
   /**
-   * Annual cost of the committee-keeping rig, FLOP. Also derived — electricity, hardware
-   * amortisation and hosting, converted at the same price.
+   * Annual cost of running the node, FLOP. Derived — electricity, hardware amortisation and
+   * hosting, converted at the same price.
+   *
+   * Named `gpuBackendCostPerYear` for one release more because the field is on a published URL's
+   * query string; it is a NODE cost. Published §15.1: a validator function "MUST NOT require
+   * executing inference, producing PoUI proofs, or owning a GPU or TEE."
    */
   gpuBackendCostPerYear?: number;
   /**
@@ -269,16 +273,19 @@ function costAssumptions(inp: ValidatorInputs): {
     });
   }
 
-  const gpuP = param("validator_gpu_backend_cost");
+  // The second leg is the node itself, not a GPU. Published §15.1 forbids requiring one:
+  // "A validator function MUST NOT require executing inference, producing PoUI proofs, or owning
+  // a GPU or TEE". What is left is an AlephBFT-class machine under a §15.3 SHOULD profile.
+  const nodeP = param("validator_hardware_spec");
   if (inp.gpuBackendCostPerYear === undefined) {
-    missing.push({ key: gpuP.key, cite: gpuP.cite, label: "GPU backend for the committee gate" });
+    missing.push({ key: nodeP.key, cite: nodeP.cite, label: "node running cost" });
   } else {
     supplied.push({
-      key: gpuP.key,
+      key: nodeP.key,
       value: inp.gpuBackendCostPerYear,
       unit: "FLOP/year",
-      cite: gpuP.cite,
-      label: "GPU backend for the committee gate",
+      cite: nodeP.cite,
+      label: "node running cost",
     });
   }
 

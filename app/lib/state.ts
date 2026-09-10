@@ -42,8 +42,7 @@ export interface Scenario {
   electricityPrice: number | undefined;
   // The rig, as physical facts. `powerKw` was a single field that asked the user to do this
   // multiplication in their head; now the tool shows the arithmetic.
-  gpuCount: number | undefined;
-  wattsPerGpu: number | undefined;
+  nodeWatts: number | undefined;
   utilisation: number | undefined;
   hardwareUsd: number | undefined;
   amortMonths: number | undefined;
@@ -100,9 +99,10 @@ export const EXAMPLE: Scenario = {
   pricePerToken: undefined,
   anchorYear: 1,
   electricityPrice: 0.09,
-  gpuCount: 2,
-  wattsPerGpu: 700,
-  utilisation: 0.5,
+  // An AlephBFT-class node under the §15.3 SHOULD profile, not a GPU rig. The published spec
+  // forbids requiring a GPU of a validator at all (§15.1, MUST NOT).
+  nodeWatts: 350,
+  utilisation: 0.8,
   hardwareUsd: 30_000,
   amortMonths: 36,
   hostingUsdMonth: 400,
@@ -144,8 +144,7 @@ export const ESTIMATE_FIELDS = [
 
 export const PHYSICAL_FIELDS = [
   "electricityPrice",
-  "gpuCount",
-  "wattsPerGpu",
+  "nodeWatts",
   "utilisation",
   "hardwareUsd",
   "amortMonths",
@@ -172,8 +171,7 @@ const KEYS: Record<keyof Scenario, string> = {
   pricePerToken: "ppt",
   anchorYear: "ay",
   electricityPrice: "ep",
-  gpuCount: "gn",
-  wattsPerGpu: "gw",
+  nodeWatts: "nw",
   utilisation: "gu",
   hardwareUsd: "hw",
   amortMonths: "am",
@@ -276,8 +274,7 @@ export function cleared(): Scenario {
     pricePerToken: undefined,
     anchorYear: 1,
     electricityPrice: undefined,
-    gpuCount: undefined,
-    wattsPerGpu: undefined,
+    nodeWatts: undefined,
     utilisation: undefined,
     hardwareUsd: undefined,
     amortMonths: undefined,

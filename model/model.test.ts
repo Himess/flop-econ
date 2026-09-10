@@ -209,15 +209,17 @@ describe("validator", () => {
       expect(isBlocked(c)).toBe(true);
       if (!isBlocked(c)) return;
       expect(c.missing).toContain("validator_da_volume_bytes");
-      expect(c.missing).toContain("validator_gpu_backend_cost");
+      expect(c.missing).toContain("validator_hardware_spec");
       expect(c.cites.join(" ")).toContain("E.47");
     });
 
-    it("blocks when only the GPU leg is missing — the one models usually omit", () => {
+    it("blocks when only the node leg is missing", () => {
+      // Was "the GPU leg". Published §15.1: a validator function "MUST NOT require executing
+      // inference, producing PoUI proofs, or owning a GPU or TEE" — the second leg is the node.
       const c = operatingCost({ ...VAL, daCostPerYear: 10_000 });
       expect(isBlocked(c)).toBe(true);
       if (!isBlocked(c)) return;
-      expect(c.missing).toEqual(["validator_gpu_backend_cost"]);
+      expect(c.missing).toEqual(["validator_hardware_spec"]);
     });
 
     it("computes once both are supplied, and marks the result ABSENT-bucketed", () => {

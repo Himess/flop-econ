@@ -18,16 +18,20 @@
 # codebase."
 
 meta:
-  spec_source: https://flop.finance/intro/yellowpaper/
-  spec_status: Draft
-  spec_page_updated: "2026-08-27"
-  spec_decision_record: "v0.4 (D-0401..D-0437, D-0501)"
-  fetched: "2026-09-09"
-  fetch_bytes: 427403
+  spec_source: https://github.com/flop-labs/yellowpaper (yellowpaper.md, main)
+  spec_mirror: https://flop.finance/intro/yellowpaper/
+  spec_status: "0.5.0 (draft) - initial public draft"
+  spec_decision_record: "v0.5 (D-0501 ratified, D-0502 proposed)"
+  fetched: "2026-09-10"
+  fetch_bytes: 248811
+  fetch_sha256: cb414e5cdfe72eec
   fetch_note: >-
-    Re-fetched three times on 2026-09-09 (09:01, 17:29, 20:24 local); byte-identical each time.
-    The spec moves on roughly a weekly cadence, so re-diff before trusting this file.
-  extraction: spec/yp.txt
+    REBASED onto the initial public release. The prior basis was a 2026-09-09 fetch of the
+    pre-publication draft (spec/yp.txt, 203,145 B), kept as evidence because three load-bearing
+    statements changed between them. Re-verified all 29 quoted claims against the published text:
+    26 unchanged, 3 reversed - see the v0_5_0_rebase disagreement.
+  extraction: spec/yp-v0.5.0.md
+  superseded_basis: spec/yp.txt
   appendix_a_rows:
     enforced: 112
     reference_only: 33
@@ -518,23 +522,63 @@ parameters:
       full session+challenge lifecycle" open. §15.3 says only "GB-scale bandwidth".
       R5.3c: there MUST NOT be a per-byte DA fee - the duty is funded from the reward share.
 
-  - key: validator_gpu_backend_cost
-    bucket: ABSENT
-    cite: "§15.1; §15.3 (qualitative only); no sizing in the spec"
+  - key: validator_gpu_requirement
+    value: 0
+    unit: GPUs
+    bucket: DEFINED
+    cite: "§15.1 (MUST NOT); §15.3; R15.4c"
     note: >-
-      The other heavy leg, and the one most cost models omit. §15.1: "committee eligibility
-      requires recent verified PoUI work (§15.4), so a production validator co-locates or
-      delegates to a calibrated miner backend." §15.3's duty table rates it "GPU-heavy" and
-      concludes "The two heavy legs are DA storage/serving and the committee-keeping GPU work."
-      No sizing, hardware spec or cost is given anywhere. User must supply.
+      Normatively ZERO, and this reversed at publication. §15.1: "A validator function MUST NOT
+      require executing inference, producing PoUI proofs, or owning a GPU or TEE: committee
+      eligibility is verification liveness (§15.4), and re-execution is a checker duty (§3.5)."
+      §15.3 concludes "The one heavy leg is DA storage/serving; no validator duty requires a GPU
+      or TEE", and rates the verification duties "light CPU".
+      The superseded draft said the opposite - "a production validator co-locates or delegates to
+      a calibrated miner backend", "GPU-heavy", "the two heavy legs". This tool modelled a GPU
+      cost leg on that basis and no longer does. See disagreements.v0_5_0_rebase.
+
+  - key: validator_ref_cpu_cores
+    value: 8
+    unit: physical_cores
+    bucket: PLANNED
+    cite: "§15.3 (SHOULD; validator-miner-hardware-costs.md §2.1)"
+    note: >-
+      SHOULD, not MUST, and the sizing document behind it is not public - so the tool can quote it
+      but cannot verify it. "8 physical cores at >=3.4 GHz with SMT off". PLANNED for that reason.
+
+  - key: validator_ref_ram_gb
+    value: 32
+    unit: GB
+    bucket: PLANNED
+    cite: "§15.3 (SHOULD; validator-miner-hardware-costs.md §2.1)"
+    note: "ECC."
+
+  - key: validator_ref_nvme_tb
+    value: 4
+    unit: TB
+    bucket: PLANNED
+    cite: "§15.3 (SHOULD; validator-miner-hardware-costs.md §2.1)"
+    note: "Enterprise NVMe - chain state plus DA custody under the §5.3 retention window."
+
+  - key: validator_ref_link_gbps
+    value: 1
+    unit: Gbps
+    bucket: PLANNED
+    cite: "§15.3 (SHOULD; validator-miner-hardware-costs.md §2.1)"
+    note: >-
+      "a 1 Gbps symmetric UNMETERED link". The closest the spec comes to sizing the DA bandwidth
+      duty, and unmetered is the operative word: the cost is a flat link, not per-GB egress. It
+      does not close E.47 - repair bandwidth and audit timing stay open - but it does tell an
+      operator what to buy, which the superseded draft did not.
 
   - key: validator_hardware_spec
-    bucket: ABSENT
-    cite: "no normative source"
+    bucket: PLANNED
+    cite: "§15.3 (SHOULD-level reference profile); validator-miner-hardware-costs.md (not public)"
     note: >-
-      The spec states NO hardware minimums. §15.3 gives qualitative intensities only ("light CPU",
-      "GB-scale bandwidth", "GPU-heavy"). Any CPU/RAM/NVMe/bandwidth figure circulating is
-      community reporting and MUST NOT be presented as normative.
+      CHANGED at publication. The superseded draft gave no hardware guidance at all, only
+      qualitative intensities, and this row said so. §15.3 now carries a SHOULD-level reference
+      profile - see validator_ref_* - described as "the AlephBFT-class node reference plus
+      storage". Still not a MUST, and the document behind it is not published, so PLANNED.
 
   - key: da_ephemeral_retention_blocks
     value: 1209600
@@ -590,13 +634,15 @@ parameters:
     note: "The window the 258 bytes covers."
 
   - key: verified_turn_bytes_base
-    value: 268
+    value: 269
     unit: bytes
     bucket: DEFINED
-    cite: "Appendix F.3 (VerifiedTurn)"
+    cite: "Appendix F.3 (VerifiedTurn); D-0505"
     note: >-
-      "SCALE size 268 + compact_len(L) + 33L B for path length L". The fixed part; the V3 leaf
-      preimage itself is 236 B.
+      "SCALE size 269 + compact_len(L) + 33L B for path length L". The fixed part; the V3 leaf
+      preimage itself is still 236 B.
+      WAS 268 in the superseded pre-publication draft. D-0505 added an explicit leaf_version field
+      to the container - one byte. Numerically negligible; the citation was not.
 
   - key: verified_turn_merkle_item_bytes
     value: 33
@@ -614,12 +660,17 @@ parameters:
     value: 86400
     unit: blocks
     bucket: DEFINED
-    cite: "§15.2 table; R2.4; R15.4a (is_work_verified_recent)"
+    cite: "§15.2 table; R15.4a; R15.4c (verification liveness)"
     note: >-
-      "LastVerifiedWork within WorkRecencyWindow = 86,400 blk (24 h); else active but out of the
-      PoUI committee." A RECENCY test on a timestamp, not a quantity test: one verified proof
-      inside the window satisfies it. No minimum G_n, job count or utilisation appears in the
-      gate itself.
+      24 h. Still a RECENCY test on a timestamp rather than a quantity test - but R15.4c, new at
+      publication, changed WHAT refreshes it. Only an on-chain ACCEPTED VERIFICATION duty counts:
+      signing an accepted attestation bundle (R3.6b), signing an accepted TOPLOC mismatch or
+      escalation-clear quorum (R3.5d), an accepted DA retrievability-audit response (R5.3b), an
+      accepted dispute opening (R12.1f), or a correct answer to a protocol-issued known-answer
+      verification challenge. Explicitly: "Prover credit (OnProofVerified) MUST NOT refresh it."
+      The superseded draft refreshed it with verified PoUI work - the prover credit now forbidden.
+      §15.3 rates these duties "light CPU". Because (a)-(d) exist only when there is traffic, the
+      protocol MUST issue every active validator at least one challenge per window.
 
   - key: calibration_min_utilization_ppm
     value: 500000
@@ -627,10 +678,13 @@ parameters:
     bucket: DEFINED
     cite: "Appendix A; §6.1; R7.2"
     note: >-
-      50%. The real quantity floor, and it is in the calibration-cap renewal rule rather than the
-      committee gate: renewal work MUST cover C_effective x max(1, current_block -
-      renewal_trigger) x this / 10^6. Relative to your OWN effective capacity, so it sets no
-      absolute hardware minimum.
+      50%. A MINER rule, not a validator one - §15.1: "Validators are not miners - a validator
+      account MAY also register as a miner, but miner activity confers no validator eligibility."
+      Renewal work MUST cover C_effective x max(1, current_block - renewal_trigger) x this / 10^6,
+      relative to the miner's OWN effective capacity.
+      Carried here because the superseded draft routed validator committee eligibility through a
+      calibrated miner backend, and this was the only quantity floor behind it. R15.4c cut that
+      link.
 
   - key: calibration_lease_blocks
     value: 604800
@@ -663,9 +717,11 @@ parameters:
     bucket: ABSENT
     cite: "E.49 — independent-demand and value-at-risk model [TBD]; tracking #735"
     note: >-
-      The single genuine unknown behind the DA duty. The spec has no demand model: E.49 is open and
-      §12.3's throughput figures are explicitly "not a measured network capacity" (48/64
-      lifecycles/s "assumes exactly two inclusions ... and is not a measured network capacity").
+      The single genuine unknown behind the DA duty, and more so since publication. The spec has no
+      demand model (E.49 open), and D-0502 WITHDREW the throughput figures the superseded draft
+      carried: "no session-control transactions-per-block, finalized-lifecycles-per-second, or
+      inclusion/finality-latency target is specified." There is no published capacity figure left
+      to anchor against.
 
   - key: network_turns_per_session
     bucket: ABSENT
@@ -1040,6 +1096,32 @@ parameters:
 # Every one of these is a disagreement the tool must surface rather than resolve.
 # ---------------------------------------------------------------------------------------------
 disagreements:
+  - id: v0_5_0_rebase
+    spec_says: >-
+      Published v0.5.0, §15.1: "A validator function MUST NOT require executing inference,
+      producing PoUI proofs, or owning a GPU or TEE: committee eligibility is verification
+      liveness (§15.4), and re-execution is a checker duty (§3.5)." §15.3: "The one heavy leg is
+      DA storage/serving; no validator duty requires a GPU or TEE."
+    downstream_says: >-
+      The pre-publication draft this tool was first built against, §15.1: "committee eligibility
+      requires recent verified PoUI work (§15.4), so a production validator co-locates or delegates
+      to a calibrated miner backend." §15.3 rated that duty "GPU-heavy" and concluded "The two
+      heavy legs are DA storage/serving and the committee-keeping GPU work."
+    status: >-
+      Not a disagreement between sources - a reversal between drafts, recorded because this tool
+      published figures on the old reading. R15.4c is new and decides it: the recency signal is
+      refreshed only by accepted VERIFICATION duties, and "Prover credit (OnProofVerified) MUST NOT
+      refresh it." Three further changes came with it: VerifiedTurn 268 -> 269 B (D-0505 added
+      leaf_version), a SHOULD-level reference hardware profile appeared in §15.3, and D-0502
+      withdrew the block-size and throughput targets.
+    quote: >-
+      "Prover credit (OnProofVerified) MUST NOT refresh it."
+    tracking: "D-0501 (ratified), D-0502 (proposed), D-0505; github.com/flop-labs/yellowpaper"
+    handling: >-
+      Rebased. The GPU cost leg is removed, the committee gate is modelled as verification
+      liveness, and both superseded findings were withdrawn rather than edited. 26 of the 29 quoted
+      claims were re-verified unchanged; spec/yp.txt is kept as evidence of what moved.
+
   - id: genesis_supply_fork
     spec_says: "genesis_supply = 2,483,460,000 FLOP (Appendix A, §2.3, R9.7, D-0421)"
     downstream_says: "3,500,000,000 FLOP (tokenomics workbook rev 2026-08-26; teaser; /intro/revenue/)"

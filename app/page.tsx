@@ -17,7 +17,7 @@ import {
   type Scenario,
 } from "./lib/state";
 
-const REPO = "https://github.com/Himess/flop-econ";
+const SPEC = "https://github.com/flop-labs/yellowpaper";
 
 /** The audit trail behind the chip: label, value, unit. Two lists, one shape. */
 function Ledger({ rows, muted }: { rows: AssumptionRef[]; muted?: boolean }) {
@@ -121,11 +121,11 @@ export default function Page() {
             How this is calculated
           </a>
           <a
-            href={REPO}
+            href={SPEC}
             className="underline decoration-dotted underline-offset-[3px]"
             style={{ color: "var(--ink-3)" }}
           >
-            Repository
+            Yellow paper
           </a>
         </div>
       </header>

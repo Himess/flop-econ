@@ -14,6 +14,7 @@ import {
   rigPowerKw,
   RETENTION_DAYS,
   validatorDaGb,
+  VERIFICATION_DUTIES,
 } from "./physical";
 import { isBlocked, num } from "./types";
 import { param } from "./params.generated";
@@ -38,14 +39,14 @@ describe("DA byte arithmetic", () => {
   });
 
   it("sizes one session from Appendix F.3 and §3.4", () => {
-    // 20 turns, path length 5: VerifiedTurn = 268 + compact_len(5)=1 + 33x5 = 434 B.
+    // 20 turns, path length 5: VerifiedTurn = 269 + compact_len(5)=1 + 33x5 = 435 B.
     // TOPLOC = ceil(800/32) x 258 = 25 x 258 = 6,450 B per turn.
-    const perTurn = 434 + 6_450;
+    const perTurn = 435 + 6_450;
     expect(value(daBytesPerSession(TRAFFIC))).toBe(20 * perTurn);
   });
 
   it("pins the constants it reads to params.yaml", () => {
-    expect(num(param("verified_turn_bytes_base"))).toBe(268);
+    expect(num(param("verified_turn_bytes_base"))).toBe(269);
     expect(num(param("verified_turn_merkle_item_bytes"))).toBe(33);
     expect(num(param("toploc_commitment_bytes"))).toBe(258);
     expect(num(param("toploc_commitment_token_window"))).toBe(32);
@@ -135,43 +136,55 @@ describe("the validator's share", () => {
   });
 });
 
-describe("the rig", () => {
-  it("derives kW from cards, draw and utilisation", () => {
-    expect(value(rigPowerKw({ gpuCount: 2, wattsPerGpu: 700, utilisation: 0.5 }))).toBeCloseTo(0.7, 9);
+describe("the node", () => {
+  it("derives kW from node draw and duty cycle", () => {
+    expect(value(rigPowerKw({ nodeWatts: 400, utilisation: 0.5 }))).toBeCloseTo(0.2, 9);
   });
 
-  it("refuses a utilisation above one", () => {
-    expect(isBlocked(rigPowerKw({ gpuCount: 1, wattsPerGpu: 700, utilisation: 1.5 }))).toBe(true);
+  it("refuses a duty cycle above one", () => {
+    expect(isBlocked(rigPowerKw({ nodeWatts: 400, utilisation: 1.5 }))).toBe(true);
   });
 
   it("blocks on each missing physical figure", () => {
-    expect(isBlocked(rigPowerKw({ wattsPerGpu: 700, utilisation: 0.5 }))).toBe(true);
-    expect(isBlocked(rigPowerKw({ gpuCount: 1, utilisation: 0.5 }))).toBe(true);
-    expect(isBlocked(rigPowerKw({ gpuCount: 1, wattsPerGpu: 700 }))).toBe(true);
+    expect(isBlocked(rigPowerKw({ utilisation: 0.5 }))).toBe(true);
+    expect(isBlocked(rigPowerKw({ nodeWatts: 400 }))).toBe(true);
   });
 });
 
-describe("the committee GPU gate, as the spec states it", () => {
+describe("the committee gate, as the published spec states it", () => {
   const d = committeeGateDuty();
 
-  it("is a 24-hour recency window with no quantity attached", () => {
+  it("is a 24-hour recency window on verification duties", () => {
     expect(d.recencyHours).toBe(24);
     expect(COMMITTEE_GATE.recencyWindowBlocks).toBe(86_400);
-  });
-
-  it("puts the only quantity floor in the calibration renewal rule", () => {
-    expect(d.utilisationFloor).toBe(0.5);
-    expect(d.minVerifiedJobs).toBe(8);
-    expect(d.leaseDays).toBe(7);
-    expect(d.renewalWindowMinutes).toBe(10);
+    expect(d.duties).toBe(VERIFICATION_DUTIES.length);
+    expect(VERIFICATION_DUTIES).toHaveLength(5);
   });
 
   /**
-   * The floor is relative to the operator's own C_effective (R7.2), so no absolute hardware
-   * figure exists anywhere in the spec. That absence is a result, not a gap in this model.
+   * The reversal this rebase exists for. R15.4c forbids the prover credit that the superseded
+   * draft required, and §15.1 forbids requiring a GPU at all — at MUST NOT strength.
    */
-  it("has no absolute hardware minimum to read", () => {
-    expect(param("validator_hardware_spec").bucket).toBe("ABSENT");
-    expect(param("validator_hardware_spec").value).toBeUndefined();
+  it("requires no GPU, normatively", () => {
+    expect(d.gpusRequired).toBe(0);
+    expect(param("validator_gpu_requirement").bucket).toBe("DEFINED");
+    expect(param("validator_gpu_requirement").value).toBe(0);
+  });
+
+  it("carries the §15.3 reference profile as a recommendation, not a minimum", () => {
+    expect(d.profile.cores).toBe(8);
+    expect(d.profile.ramGb).toBe(32);
+    expect(d.profile.nvmeTb).toBe(4);
+    expect(d.profile.linkGbps).toBe(1);
+    // SHOULD, and the sizing document behind it is not published.
+    for (const k of ["validator_ref_cpu_cores", "validator_ref_link_gbps", "validator_hardware_spec"] as const) {
+      expect(param(k).bucket, k).toBe("PLANNED");
+    }
+  });
+
+  it("keeps the calibration floor as a miner rule only", () => {
+    // Still a real parameter; it just no longer bears on validator eligibility.
+    expect(param("calibration_min_utilization_ppm").value).toBe(500_000);
+    expect(param("calibration_min_utilization_ppm").note).toMatch(/MINER rule/);
   });
 });

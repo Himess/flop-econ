@@ -105,9 +105,10 @@ export const CALCS: readonly CalcEntry[] = [
     id: ANCHORS.operatingCost,
     title: "Operating cost",
     role: "validator",
-    formula: "cost = electricity × kW × 8,760 + hardware ÷ amortMonths × 12 + hosting × 12",
-    body: "Every term is yours; the specification fixes none of them. It states no hardware minimums at all — §15.3 gives qualitative intensities only, naming DA storage-and-serving and the committee-keeping GPU work as the two heavy legs. The tool refuses to compute a net figure until both are supplied rather than defaulting them.",
-    cites: "§15.3 · E.47 · your assumptions",
+    formula:
+      "cost = electricity × kW × 8,760 + hardware ÷ amortMonths × 12 + hosting × 12 + DA storage",
+    body: "Every term is yours; the specification fixes none of them. What it does fix is the shape: §15.3 rates the verification duties \"light CPU\" and concludes \"The one heavy leg is DA storage/serving; no validator duty requires a GPU or TEE\" — so the second leg here is a node, not a GPU rig, and kW is derived from the node's draw and duty cycle rather than typed. The tool refuses to compute a net figure until every term is supplied rather than defaulting any of them to zero.",
+    cites: "§15.1 · §15.3 · E.47 · your assumptions",
   },
   {
     id: ANCHORS.net,
@@ -249,7 +250,7 @@ export const CALCS: readonly CalcEntry[] = [
     title: "The DA storage duty, in bytes",
     role: "validator",
     formula: `L        = ceil(log2(turns))
-perTurn  = 268 + compact_len(L) + 33 x L                 [App. F.3]
+perTurn  = 269 + compact_len(L) + 33 x L                 [App. F.3, D-0505]
 toploc   = ceil(tokensPerTurn / 32) x 258                [§3.4]
 session  = turns x (perTurn + toploc)
 stored   = session x sessionsPerDay x 14 d x 2           [§5.3 rate 1/2, 14 d retention]
@@ -259,14 +260,18 @@ yours    = stored x (your stake / network stake)         [App. F.4 stake-weighte
   },
   {
     id: ANCHORS.committeeGate,
-    title: "What the committee gate actually requires of a GPU",
+    title: "What the committee gate actually requires",
     role: "validator",
-    formula: `gate     : LastVerifiedWork within 86,400 blocks (24 h)   [§15.2, R15.4a]
-renewal  : >= 8 fresh jobs whose aggregate verified work
-           >= C_effective x elapsed x 500,000 / 10^6      [R7.2]
-           elapsed <= 600 blocks (10 min), lease 7 d`,
-    body: "The gate is a recency test on a timestamp, not a quantity test: one verified proof inside the 24-hour window keeps the seat, and no minimum G_n or utilisation appears in it. The only quantity floor in the system is in the calibration-cap renewal rule, and it is stated relative to the operator's OWN effective capacity — so the specification sets no absolute hardware minimum, and a small card with a small cap clears the same rule as a large one. §15.3 gives qualitative intensities only. This is why the tool asks for cards, draw and utilisation and derives a cost, instead of asking what a GPU backend costs per year: the protocol fixes the shape of the duty and the operator fixes its size.",
-    cites: "§15.2 · §15.3 · R2.4 · R15.4a · R7.2 · R15.5 · Appendix A (work_recency_window_blocks_gate, calibration_min_utilization_ppm, calibration_lease_blocks) · E.42",
+    formula: `gate     : one ACCEPTED VERIFICATION duty within 86,400 blocks (24 h)  [R15.4c]
+duties   : sign an accepted attestation bundle                       [R3.6b]
+           sign an accepted TOPLOC mismatch / escalation-clear quorum [R3.5d]
+           answer an accepted DA retrievability audit                [R5.3b]
+           open an accepted dispute                                  [R12.1f]
+           answer a known-answer verification challenge              [§8.1 pattern]
+excluded : prover credit (OnProofVerified) MUST NOT refresh it
+GPUs     : 0 — §15.1 MUST NOT require a GPU or TEE`,
+    body: "The gate is a recency test, and R15.4c — new in the public release — fixes what refreshes it: only an on-chain accepted verification duty, and \"Prover credit (OnProofVerified) MUST NOT refresh it.\" §15.3 rates all five duties \"light CPU\", and sampled re-execution is marked \"not a validator duty\", moved to a checker lane. So there is no GPU requirement to size — §15.1 forbids one at MUST NOT strength. What the specification offers instead is a SHOULD-level reference profile: 8 cores at ≥3.4 GHz with SMT off, 32 GB ECC, 4 TB enterprise NVMe, and a 1 Gbps symmetric unmetered link. It is carried here as planned rather than defined, because it is a SHOULD and the sizing document behind it is not published. The superseded draft required verified PoUI work and rated the duty GPU-heavy; see the findings and the v0_5_0_rebase disagreement.",
+    cites: "§15.1 (MUST NOT) · §15.2 · §15.3 · R15.4a · R15.4c · R3.5d · R3.6b · R5.3b · R12.1f · E.42",
   },
   {
     id: ANCHORS.dispute,
@@ -291,6 +296,20 @@ export interface Finding {
 
 export const FINDINGS: readonly Finding[] = [
   {
+    id: "f-no-gpu",
+    title: "A validator needs no GPU, and the published draft says so at MUST NOT strength",
+    claim:
+      "Everyone sizing a FLOP validator is budgeting for a GPU. The initial public release forbids requiring one: \u00a715.1 says a validator function \"MUST NOT require executing inference, producing PoUI proofs, or owning a GPU or TEE\". This reversed between the pre-publication draft and 0.5.0, and this tool published figures on the old reading before it was corrected.",
+    body: [
+      "The draft this tool was first built against said the opposite. Its \u00a715.1: \"committee eligibility requires recent verified PoUI work (\u00a715.4), so a production validator co-locates or delegates to a calibrated miner backend.\" Its \u00a715.3 rated that duty \"GPU-heavy\" and concluded \"The two heavy legs are DA storage/serving and the committee-keeping GPU work.\" Neither sentence survives in the published text.",
+      "R15.4c is what decided it, and it is new. The committee recency signal \"MUST be refreshed only by an on-chain accepted verification duty\": signing an accepted attestation bundle (R3.6b), signing an accepted TOPLOC mismatch or escalation-clear quorum (R3.5d), answering an accepted DA retrievability audit (R5.3b), opening an accepted dispute (R12.1f), or answering a protocol-issued known-answer challenge. Then, explicitly: \"Prover credit (OnProofVerified) MUST NOT refresh it.\" The one thing the old gate required is now the one thing that does not count.",
+      "\u00a715.3 rates every one of those duties \"light CPU\", drops \"GPU-heavy\" entirely, and closes with \"The one heavy leg is DA storage/serving; no validator duty requires a GPU or TEE.\" Sampled re-execution \u2014 the expensive part \u2014 is marked \"not a validator duty\" and moved to a checker lane (R3.5d). And \u00a715.1 adds the separation in so many words: \"Validators are not miners \u2014 a validator account MAY also register as a miner, but miner activity confers no validator eligibility.\"",
+      "What replaced the guesswork is a recommendation. \u00a715.3 now carries a SHOULD-level reference profile: 8 physical cores at \u22653.4 GHz with SMT off, 32 GB ECC RAM, 4 TB enterprise NVMe, and a 1 Gbps symmetric unmetered link \u2014 \"the AlephBFT-class node reference plus storage\". It is a SHOULD, not a MUST, and the sizing document behind it is not published, so this tool carries it as PLANNED rather than DEFINED. But it is the first hardware guidance the specification has offered, and it is an ordinary server.",
+      "The practical consequence is large and cuts the other way from how it is usually framed: the cost of running a validator is a node, a link and a stake \u2014 not a GPU fleet. This tool modelled a GPU cost leg, asked for cards and draw per card, and shipped a finding about how nobody can size the requirement. All of that is withdrawn. What remains true is the shape of the argument: the specification's own words decide it, and the words changed.",
+    ],
+    cites: "\u00a715.1 (MUST NOT) \u00b7 \u00a715.3 \u00b7 R15.4c \u00b7 R3.5d \u00b7 R3.6b \u00b7 R5.3b \u00b7 R12.1f \u00b7 D-0501/D-0505 \u00b7 superseded draft \u00a715.1/\u00a715.3",
+  },
+  {
     id: "f-da-storage",
     title: "The DA storage duty is a rounding error, and the spec calls it a heavy leg",
     claim:
@@ -302,19 +321,6 @@ export const FINDINGS: readonly Finding[] = [
       "The heavy part is bandwidth, and that is exactly what cannot be derived: E.47 leaves \"audit/repair timing, repair bandwidth\" open, and §15.3 quantifies the duty only as \"GB-scale bandwidth\". So the tool derives the storage and says plainly that egress is out of the model — a validator sizing their costs from the storage figure alone will understate the leg, and there is no honest way to close it from the specification as written.",
     ],
     cites: "App. F.3 · §3.4 R3.4a · §5.3 R5.3a · R5.3d · §15.3 · Appendix A (da_ephemeral_retention_blocks) · E.47",
-  },
-  {
-    id: "f-committee-gate",
-    title: "The committee GPU gate has no quantity, and the only floor is relative to yourself",
-    claim:
-      "Everyone planning to validate is asking how big a GPU they need. The specification never says, and not by omission: the gate is a recency test on a timestamp, and the one quantity floor in the system is stated as a fraction of the operator's own capacity.",
-    body: [
-      "R2.4 and R15.4a restrict finality-committee membership to validators meeting the stake minimum and is_work_verified_recent. §15.2's table gives that predicate exactly: \"LastVerifiedWork within WorkRecencyWindow = 86,400 blk (24 h); else active but out of the PoUI committee.\" One verified proof inside the window satisfies it. No minimum G_n, job count or utilisation appears in the gate.",
-      "The quantity lives one layer down, in the calibration-cap renewal rule. R7.2: renewal needs at least calibration_renewal_min_verified_jobs = 8 fresh one-shot jobs whose \"aggregate verified work MUST cover C_effective × max(1, current_block − renewal_trigger) × calibration_min_utilization_ppm / 10^6\" — 50%. The trigger cannot be older than calibration_renewal_max_age_blocks = 600 blocks, so the 50% applies over at most ten minutes, once per seven-day lease.",
-      "C_effective is the operator's OWN benchmarked capacity. A small card with a small cap clears the same rule as a large one. There is therefore no absolute hardware minimum anywhere in the specification — §15.3 gives qualitative intensities only (\"light CPU\", \"GB-scale bandwidth\", \"GPU-heavy\"), and any CPU/RAM/NVMe figure circulating is community reporting.",
-      "The spec is candid about the consequence. R15.5 ranks validators by stake \"subject to a minimum-performance floor (verified-work + liveness), so wash verified-work does not improve rank (only clearing the floor remains gameable)\" — clearing the floor is acknowledged as gameable. That is why this tool asks for cards, draw and utilisation and derives a cost, rather than asking what a GPU backend costs per year: the protocol sets the shape of the duty, and the operator sets its size.",
-    ],
-    cites: "R2.4 · R15.4a · §15.2 · §15.3 · R7.2 · R15.5 · Appendix A (work_recency_window, calibration_*) · E.42",
   },
   {
     id: "f-committee-premium",
@@ -356,19 +362,6 @@ export const FINDINGS: readonly Finding[] = [
       "E.39 is unresolved and binary — the workbook ratifies a 0% reward lock while the distribution hook is unchanged — so the tool computes both and never picks one. On paper the two are identical. In cash they are three hundred times apart.",
     ],
     cites: "E.39 · D-0408 · M11 · §15.7 · §1.2 · #1356",
-  },
-  {
-    id: "f-gpu-backend",
-    title: "A validator needs a GPU backend, and no published cost model says so",
-    claim:
-      "Committee eligibility requires recent verified proof-of-useful-inference work, so a production validator co-locates or delegates to a calibrated miner backend.",
-    body: [
-      "§15.1 says it directly: a validator is not required to own a TEE GPU to validate, but committee eligibility requires recent verified PoUI work, so a production validator co-locates or delegates to a calibrated miner backend. LastVerifiedWork must fall inside a 24-hour window or the validator is active but out of the committee.",
-      "§15.3's duty table rates that work GPU-heavy and concludes that the two heavy legs are DA storage-and-serving and the committee-keeping GPU work.",
-      "Neither is sized anywhere. The specification states no hardware minimums at all, and E.47 leaves the cumulative DA storage and retention budget open. Community reporting that circulates CPU, RAM and NVMe figures is describing the small half.",
-      "So the tool refuses to compute a net figure until both are supplied, rather than defaulting them to zero and quietly producing a number that omits a validator's largest cost.",
-    ],
-    cites: "§15.1 · §15.3 · §15.2 (WorkRecencyWindow) · E.47",
   },
 ];
 

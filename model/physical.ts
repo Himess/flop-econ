@@ -199,13 +199,33 @@ export function daStorageUsdYear(
 
 // ---------------------------------------------------------------------------- the rig
 
-/** Physical facts about the operator's own machine. */
+/**
+ * Physical facts about the operator's own machine.
+ *
+ * This was a GPU rig — cards, draw per card, utilisation — because the draft this tool was first
+ * built against routed committee eligibility through "a calibrated miner backend". The published
+ * §15.1 forbids that reading: a validator function "MUST NOT require executing inference,
+ * producing PoUI proofs, or owning a GPU or TEE." So the machine is a node, and the question is
+ * what it draws.
+ */
 export interface Rig {
-  gpuCount?: number;
-  wattsPerGpu?: number;
+  /** Continuous draw of the whole node, watts. */
+  nodeWatts?: number;
   /** Expected duty cycle, 0..1. The operator's decision, not a spec figure. */
   utilisation?: number;
 }
+
+/**
+ * The §15.3 SHOULD-level reference profile, quoted so the tool can show an operator what the
+ * specification actually recommends. Not a MUST, and the sizing document behind it is not public,
+ * so every row is PLANNED.
+ */
+export const REFERENCE_PROFILE = {
+  cores: num(param("validator_ref_cpu_cores")),
+  ramGb: num(param("validator_ref_ram_gb")),
+  nvmeTb: num(param("validator_ref_nvme_tb")),
+  linkGbps: num(param("validator_ref_link_gbps")),
+} as const;
 
 /**
  * Continuous draw in kW.
@@ -222,70 +242,77 @@ export function rigPowerKw(r: Rig): Computed {
     }
     return v;
   };
-  const count = need(r.gpuCount, "gpu_count", "GPU count");
-  const watts = need(r.wattsPerGpu, "watts_per_gpu", "power draw per GPU");
-  const util = need(r.utilisation, "gpu_utilisation", "expected utilisation");
+  const watts = need(r.nodeWatts, "node_watts", "node draw");
+  const util = need(r.utilisation, "node_utilisation", "expected duty cycle");
   if (missing.length > 0) return blocked(missing);
   if (util > 1) {
     return blocked([
-      { key: "gpu_utilisation", cite: "your hardware", label: "a utilisation between 0 and 1" },
+      { key: "node_utilisation", cite: "your hardware", label: "a duty cycle between 0 and 1" },
     ]);
   }
 
   return figure({
-    value: (count * watts * util) / WATTS_PER_KW,
+    value: (watts * util) / WATTS_PER_KW,
     unit: "kW",
     cites: [param("validator_hardware_spec").cite],
     assumptions: [
-      { key: "gpu_count", value: count, unit: "cards", cite: "your hardware", label: "GPU count", kind: "physical" },
-      { key: "watts_per_gpu", value: watts, unit: "W", cite: "your hardware", label: "power draw per GPU", kind: "physical" },
-      { key: "gpu_utilisation", value: util, unit: "fraction", cite: "your decision", label: "expected utilisation", kind: "physical" },
+      { key: "node_watts", value: watts, unit: "W", cite: "your hardware", label: "node draw", kind: "physical" },
+      { key: "node_utilisation", value: util, unit: "fraction", cite: "your decision", label: "expected duty cycle", kind: "physical" },
     ],
-    derivation: `${count} cards x ${watts} W x ${(util * 1e2).toFixed(0)}% / ${WATTS_PER_KW}`,
+    derivation: `${watts} W x ${(util * 1e2).toFixed(0)}% / ${WATTS_PER_KW}`,
   });
 }
 
 // ---------------------------------------------------------------------------- the committee gate
 
 /**
- * What the specification actually requires of the committee-keeping GPU, quoted.
+ * What the specification actually requires to keep a committee seat, quoted.
  *
- * The expectation going in was that the spec would not say how much work the gate needs. It is
- * more specific than that, and more surprising: the GATE is a recency test, and the only quantity
- * floor anywhere lives one layer down, in the calibration-cap renewal rule — where it is stated
- * relative to the operator's OWN effective capacity, so it sets no absolute hardware minimum at
- * all. §15.3's duty table rates the leg "GPU-heavy" and the spec states no hardware minimums.
+ * This section was written twice, and the rewrite is the point. Against the pre-publication draft
+ * the gate was "recent verified PoUI work", which is why an earlier version of this tool modelled
+ * a GPU cost leg and shipped a finding about how nobody can size it.
+ *
+ * The published draft settles it the other way. R15.4c is new and normative: the recency signal
+ * "MUST be refreshed only by an on-chain accepted verification duty" — signing an accepted
+ * attestation bundle, signing an accepted TOPLOC mismatch or escalation-clear quorum, an accepted
+ * DA retrievability-audit response, an accepted dispute opening, or a correct answer to a
+ * protocol-issued known-answer challenge. And then, explicitly: "Prover credit (OnProofVerified)
+ * MUST NOT refresh it." §15.3 rates every one of those duties "light CPU".
+ *
+ * So there is no GPU gate to size. §15.1: a validator function "MUST NOT require executing
+ * inference, producing PoUI proofs, or owning a GPU or TEE."
  */
 export const COMMITTEE_GATE = {
-  /** One verified proof inside this window keeps the seat. No quantity is attached. */
+  /** One accepted verification duty inside this window keeps the seat. */
   recencyWindowBlocks: num(param("work_recency_window_blocks_gate")),
-  /** Renewal cadence for the calibration cap that lets you produce verified work at all. */
-  leaseBlocks: num(param("calibration_lease_blocks")),
-  /** Fresh one-shot Ghost canaries per renewal. "Job count alone MUST NOT renew a cap." */
-  minVerifiedJobs: num(param("calibration_renewal_min_verified_jobs")),
-  /** The renewal window is bounded, so the floor is a burst rather than a duty cycle. */
-  renewalWindowBlocks: num(param("calibration_renewal_max_age_blocks")),
-  /** Fraction of your own C_effective the renewal burst must cover. */
-  utilisationFloor: num(param("calibration_min_utilization_ppm")) / 1e6,
+  /** No GPU, no TEE, no inference. §15.1, at MUST NOT strength. */
+  gpusRequired: num(param("validator_gpu_requirement")),
 } as const;
+
+/** The five accepted duties that refresh the recency signal (R15.4c), in reading order. */
+export const VERIFICATION_DUTIES = [
+  { cite: "R3.6b", label: "sign an accepted validator attestation bundle" },
+  { cite: "R3.5d / §12.1", label: "sign an accepted TOPLOC mismatch or escalation-clear quorum" },
+  { cite: "R5.3b", label: "answer an accepted DA retrievability audit" },
+  { cite: "R12.1f", label: "open an accepted dispute" },
+  { cite: "§8.1 pattern", label: "answer a protocol-issued known-answer challenge" },
+] as const;
 
 const BLOCKS_PER_DAY = BLOCKS_PER_YEAR / DAYS_PER_YEAR;
 const BLOCKS_PER_HOUR = BLOCKS_PER_DAY / 24;
 
-/** The gate in units a person reads: hours, days, minutes, percent. */
+/** The gate in units a person reads. */
 export function committeeGateDuty(): {
   recencyHours: number;
-  leaseDays: number;
-  renewalWindowMinutes: number;
-  minVerifiedJobs: number;
-  utilisationFloor: number;
+  gpusRequired: number;
+  duties: number;
+  profile: typeof REFERENCE_PROFILE;
 } {
   return {
     recencyHours: COMMITTEE_GATE.recencyWindowBlocks / BLOCKS_PER_HOUR,
-    leaseDays: COMMITTEE_GATE.leaseBlocks / BLOCKS_PER_DAY,
-    renewalWindowMinutes: COMMITTEE_GATE.renewalWindowBlocks / (BLOCKS_PER_HOUR / 60),
-    minVerifiedJobs: COMMITTEE_GATE.minVerifiedJobs,
-    utilisationFloor: COMMITTEE_GATE.utilisationFloor,
+    gpusRequired: COMMITTEE_GATE.gpusRequired,
+    duties: VERIFICATION_DUTIES.length,
+    profile: REFERENCE_PROFILE,
   };
 }
 
