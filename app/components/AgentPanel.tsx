@@ -17,6 +17,15 @@ import { ANCHORS, href } from "../lib/docs";
 import type { Scenario } from "../lib/state";
 import { Answers, Block, Drawer, Field, Headline, Inputs, Line, Mark } from "./Marks";
 
+/**
+ * The table's column is "you recover", so cooperative settle is a truthful 0 — and it sits three
+ * inches under a headline saying you lost 150 FLOP to over-reservation. Both are right and read as
+ * a contradiction side by side, so the row says which side of the trade it is reporting.
+ */
+const PATH_NOTES: Record<string, string> = {
+  cooperative_settle: "the tariff is paid and the remainder is not returned",
+};
+
 export function AgentPanel({
   s,
   set,
@@ -151,6 +160,11 @@ export function AgentPanel({
                     }}
                   >
                     {p.label}
+                    {PATH_NOTES[p.path] ? (
+                      <span className="mt-0.5 block text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                        {PATH_NOTES[p.path]}
+                      </span>
+                    ) : null}
                   </td>
                   <td
                     className="py-2.5 pr-3 align-top text-[13px]"

@@ -29,6 +29,12 @@ import { compact, int } from "../lib/format";
 
 /** Below this the axis furniture has to thin out or it collides with itself. */
 const NARROW = 620;
+/**
+ * A series whose whole range is under this fraction of the axis is drawn flat on the baseline. It
+ * is the truth, but on screen it is indistinguishable from a series that was never plotted, so the
+ * figure says so in words rather than letting the reader assume a bug.
+ */
+const FLAT_FRACTION = 0.02;
 const FALLBACK_W = 880;
 const MONTHS_PER_YEAR = 12;
 
@@ -201,6 +207,15 @@ export function Chart({ rows, priceKnown }: { rows: TimelineMonth[]; priceKnown:
     if (overflow > 0) placed.forEach((p) => (p.yy -= overflow));
     return placed;
   }, [rows, n, y, g.narrow, PAD.t, plotH]);
+
+  /** Series that are real but too small to see against this axis. */
+  const flat = useMemo(() => {
+    const last = rows[n - 1];
+    if (!last) return [];
+    return SERIES.filter((sr) => sr.key !== "cost")
+      .map((sr) => ({ label: sr.label, v: sr.get(last) }))
+      .filter(({ v }) => v > 0 && v / (top || 1) < FLAT_FRACTION);
+  }, [rows, n, top]);
 
   const yearLines = useMemo(() => {
     const out: number[] = [];
@@ -375,6 +390,22 @@ export function Chart({ rows, priceKnown }: { rows: TimelineMonth[]; priceKnown:
                       cy={y(s.get(active))}
                       r="4.5"
                       fill={s.colour}
+                      stroke="var(--ground)"
+                      strokeWidth="2"
+                    />
+                  ))
+                : null}
+
+              {/* An end marker per series, ringed in the surface so it survives an overlap. The
+                  flat series needs it most: without a dot it reads as an axis, not a line. */}
+              {rows[n - 1]
+                ? SERIES.map((sr) => (
+                    <circle
+                      key={`end${sr.key}`}
+                      cx={x(rows[n - 1]!.month)}
+                      cy={y(sr.get(rows[n - 1]!))}
+                      r="4"
+                      fill={sr.colour}
                       stroke="var(--ground)"
                       strokeWidth="2"
                     />
@@ -594,6 +625,13 @@ export function Chart({ rows, priceKnown }: { rows: TimelineMonth[]; priceKnown:
           </span>
         ))}
       </figcaption>
+
+      {flat.length > 0 ? (
+        <p className="mt-2.5 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+          {flat.map((f) => `${f.label} ends at $${int(f.v)}`).join(", ")}
+          {` — under ${Math.round(FLAT_FRACTION * 1e2)}% of a $${compact(top)} axis, so the line sits on the baseline rather than being missing.`}
+        </p>
+      ) : null}
 
       <details className="group mt-4">
         <summary

@@ -29,6 +29,44 @@ const toolFiles = [
   join(ROOT, "app", "page.tsx"),
   ...walk(join(ROOT, "app", "components")),
 ];
+/**
+ * Strip everything that is not rendered text before looking for prose.
+ *
+ * Without this the JSX-text scan reads a doc comment as page copy: a `=>` supplies the opening
+ * `>` and the next comparison supplies the closing `<`, so a four-line comment between them looks
+ * exactly like a paragraph a component printed. The order is the one `guards.test.ts` arrived at
+ * the hard way: block comments, then strings, then line comments — strip `//` first and a URL
+ * inside a string eats the rest of the line, unbalancing every quote after it.
+ */
+function rendered(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+    .replace(/'(?:[^'\\]|\\.)*'/g, "''")
+    .replace(/`(?:[^`\\]|\\.)*`/g, "``")
+    .replace(/^\s*\/\/[^\n]*/gm, " ");
+}
+
+/**
+ * Text runs a component actually prints. The closing `<` has to open a real tag, and the run has
+ * to read as prose — a fat arrow supplies a `>` and any later comparison supplies a `<`, so
+ * without both filters this walks into a block of code and counts every property access as a
+ * sentence.
+ */
+function proseRuns(src: string): string[] {
+  const out: string[] = [];
+  for (const m of rendered(src).matchAll(/>([^<>{}]{80,})<(?=[/A-Za-z])/g)) {
+    const text = m[1]!.replace(/\s+/g, " ").trim();
+    if (/[;=]/.test(text)) continue;
+    out.push(text);
+  }
+  return out;
+}
+
+function sentenceCount(text: string): number {
+  return text.split(/[.!?](?:\s|$)/).filter((x) => x.trim().length > 12).length;
+}
+
 const docsSource = readFileSync(join(ROOT, "app", "docs", "page.tsx"), "utf8");
 const toolSource = toolFiles.map((f) => readFileSync(f, "utf8")).join("\n");
 
@@ -106,19 +144,36 @@ describe("the tool page answers and does not lecture", () => {
    * component reads as several sentences in a single text run.
    */
   it("no JSX text run on the tool page exceeds two sentences", () => {
-    const offenders: string[] = [];
-    for (const f of toolFiles) {
-      const src = readFileSync(f, "utf8");
-      // Text between tags, ignoring runs that are mostly markup or expressions.
-      for (const m of src.matchAll(/>([^<>{}]{80,})</g)) {
-        const text = m[1]!.replace(/\s+/g, " ").trim();
-        const sentences = text.split(/[.!?](?:\s|$)/).filter((x) => x.trim().length > 12);
-        if (sentences.length > 2) {
-          offenders.push(`${f.replace(ROOT, "")}: ${text.slice(0, 70)}…`);
-        }
-      }
-    }
+    const offenders = toolFiles.flatMap((f) =>
+      proseRuns(readFileSync(f, "utf8"))
+        .filter((t) => sentenceCount(t) > 2)
+        .map((t) => `${f.replace(ROOT, "")}: ${t.slice(0, 70)}…`),
+    );
     expect(offenders, "move this prose to app/docs and link to it").toEqual([]);
+  });
+
+  /**
+   * The detector is loose enough to be fooled in both directions, so it is checked against planted
+   * samples rather than trusted. It once counted a doc comment as a paragraph and, after that was
+   * fixed, counted a run of property accesses as five sentences — both false positives that would
+   * have been "fixed" by weakening the rule until it caught nothing.
+   */
+  it("the prose detector catches a paragraph and ignores code", () => {
+    const paragraph =
+      "<p>The committee is resampled every epoch. Your income depends on the rate at which you " +
+      "are seated. A snapshot boolean reports a premium that is not there.</p>";
+    expect(proseRuns(paragraph).map(sentenceCount)).toEqual([3]);
+
+    const oneSentence =
+      "<p>One fixed price for every month, so a token locked for two years is not worth this " +
+      "when it unlocks.</p>";
+    expect(proseRuns(oneSentence).map(sentenceCount)).toEqual([1]);
+
+    const code = "const f = (a) => a.b.c.d.value > 0 ? a.b.c.d.value : 0; const g = f(x); return <div>";
+    expect(proseRuns(code)).toEqual([]);
+
+    const comment = "/* A sentence. A second one. A third one that keeps going for a while. */ <div>";
+    expect(proseRuns(comment)).toEqual([]);
   });
 
   it("the tool page does not embed the disagreements or the parameter table", () => {

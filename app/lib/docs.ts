@@ -80,7 +80,7 @@ export const CALCS: readonly CalcEntry[] = [
     role: "validator",
     formula:
       "share = stake × (p·1.1 + (1−p)) ÷ [ networkStake × (p̄·1.1 + (1−p̄)) ]\nincome = validatorPool(era) × share",
-    body: "R9.5 splits the validator pool by stake, with a 1.1× weight for validators seated on the finality committee. The committee is resampled every epoch (R15.4a), so annual income depends on the rate at which you are seated (p) against the set average (p̄), not on whether you happen to be seated right now. The pool itself is 10% of the block reward for that era.",
+    body: "R9.5 splits the validator pool by stake, with a 1.1× weight for validators seated on the finality committee. The committee is resampled every epoch (R15.4a), so annual income depends on the rate at which you are seated (p) against the set average (p̄), not on whether you happen to be seated right now. The pool itself is 10% of the block reward for that era. The tool asks for the average stake per validator rather than the network total, because nobody can estimate a total before the network exists but an operator can place themselves against an average; networkStake is that average multiplied by the active-set size, and it is shown under the committee diagnostics.",
     cites: "R9.5 · R15.4a · Appendix A",
   },
   {

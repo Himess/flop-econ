@@ -142,6 +142,16 @@ export function ValidatorPanel({
   );
   const last = runs[live][runs[live].length - 1]!;
 
+  /**
+   * The network total is unknowable before a network exists; the average is a figure an operator
+   * can reason about, because it is the thing their own stake is measured against. The model still
+   * takes the total, so the conversion happens here and `networkStake` stays the stored field —
+   * every shared link written before this change still resolves.
+   */
+  const avgStake = s.networkStake === undefined ? undefined : s.networkStake / s.setSize;
+  const avgText =
+    avgStake === undefined ? "" : Number.isInteger(avgStake) ? String(avgStake) : avgStake.toFixed(2);
+
   return (
     <div>
       <Inputs>
@@ -153,17 +163,22 @@ export function ValidatorPanel({
           onChange={(v) => set({ stake: v === "" ? undefined : Number(v) })}
         />
         <Field
-          id="v-net"
-          label="Set total stake"
-          suffix="FLOP"
-          value={s.networkStake === undefined ? "" : String(s.networkStake)}
-          onChange={(v) => set({ networkStake: v === "" ? undefined : Number(v) })}
+          id="v-avg"
+          label="Average stake"
+          suffix="FLOP each"
+          value={avgText}
+          onChange={(v) => set({ networkStake: v === "" ? undefined : Number(v) * s.setSize })}
         />
         <Select
           id="v-set"
           label="Set size"
           value={String(s.setSize)}
-          onChange={(v) => set({ setSize: Number(v) })}
+          onChange={(v) => {
+            // Changing the set size holds the average and moves the total, which is the reading an
+            // operator means: the same peers, more of them.
+            const size = Number(v);
+            set({ setSize: size, ...(avgStake === undefined ? {} : { networkStake: avgStake * size }) });
+          }}
           options={[
             { value: String(SET_SIZES[0]), label: `${int(SET_SIZES[0])} wired` },
             { value: String(SET_SIZES[1]), label: `${int(SET_SIZES[1])} ratified` },
@@ -227,7 +242,9 @@ export function ValidatorPanel({
           docs={ANCHORS.cashPayback}
           suffix="months"
           fallback={`never within ${int(s.horizonMonths)} months`}
-          mark="E.39"
+          // Not just E.39. This number moves with the DA, GPU, hardware and hosting figures the
+          // user typed, so the mark has to name the weaker of the two provenances first.
+          mark="your assumption · E.39"
         />
         </Answers>
       </div>
@@ -483,6 +500,19 @@ export function ValidatorPanel({
       </Drawer>
 
       <Drawer summary="Committee, queue and audit-pool diagnostics">
+        <div
+          className="flex flex-wrap items-baseline justify-between gap-x-4 py-2"
+          style={{ borderBottom: "1px solid var(--rule)" }}
+        >
+          <span className="text-[13.5px]" style={{ color: "var(--ink-2)" }}>
+            Implied network stake
+          </span>
+          <span className="font-mono text-[14px]" style={{ fontFamily: "var(--font-mono)" }}>
+            {s.networkStake === undefined ? "—" : int(s.networkStake)}{" "}
+            <span style={{ color: "var(--ink-3)" }}>FLOP</span>
+            <Mark bucket="DEFINED" label="E.41" docs={ANCHORS.seatRate} />
+          </span>
+        </div>
         <Line
           label="Committee premium"
           result={premium}

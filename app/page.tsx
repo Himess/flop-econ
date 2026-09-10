@@ -154,6 +154,7 @@ export default function Page() {
             color: assumptions.length ? "var(--absent)" : "var(--ink-3)",
             fontFamily: "var(--font-mono)",
           }}
+          title="Figures the specification does not define. Click to list them."
         >
           {assumptions.length} assumed
         </button>
@@ -179,33 +180,45 @@ export default function Page() {
 
       {showAssumptions ? (
         <div
-          className="mt-3 rounded-[3px] px-4 py-3"
+          className="mt-3 rounded-[6px] px-4 py-3.5"
           style={{ background: "var(--panel)", border: "1px dotted var(--absent)" }}
         >
-          <p className="text-[12px]" style={{ color: "var(--ink-2)" }}>
-            Figures you supplied that the specification does not define.
+          <p className="text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+            Figures the specification does not define, which you supplied.
+          </p>
+          <p className="mt-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            Your stake, the set size and the average stake are your situation rather than
+            assumptions, so they are not counted here.
           </p>
           {assumptions.length === 0 ? (
-            <p className="mt-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
-              None — figures that need one are blocked rather than defaulted.
+            <p className="mt-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>
+              None — a figure that needs one is blocked rather than defaulted.
             </p>
           ) : (
-            <ul className="mt-2 grid gap-x-8 gap-y-1 sm:grid-cols-2">
+            <ul className="mt-3 grid gap-x-10 gap-y-0 sm:grid-cols-2">
               {assumptions.map((a, i) => (
                 <li
                   key={`${a.key}-${i}`}
-                  className="text-[11.5px]"
-                  style={{ fontFamily: "var(--font-mono)" }}
+                  className="flex items-baseline justify-between gap-4 py-1.5 text-[12.5px]"
+                  style={{ borderBottom: "1px solid var(--rule)" }}
                 >
-                  <span style={{ color: "var(--ink-2)" }}>{a.key}</span>{" "}
-                  <span style={{ color: "var(--ink-3)" }}>
-                    {a.value.toLocaleString("en-US")} {a.unit}
+                  <span style={{ color: "var(--ink-2)" }}>{a.label}</span>
+                  <span
+                    className="whitespace-nowrap"
+                    style={{
+                      color: "var(--ink)",
+                      fontFamily: "var(--font-mono)",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {a.value.toLocaleString("en-US")}{" "}
+                    <span style={{ color: "var(--ink-3)" }}>{a.unit}</span>
                   </span>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          <p className="mt-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
             <a href={DOCS_PATH} className="underline decoration-dotted underline-offset-2">
               What each one affects
             </a>
