@@ -35,11 +35,14 @@ export function PathChart({ paths, escrow }: { paths: readonly CloseOutcome[]; e
   }, []);
 
   const narrow = width < NARROW;
-  const labelW = narrow ? 116 : 208;
-  const valueW = narrow ? 62 : 92;
+  // The longest label is "DA unrecoverable (beyond k shards)", so the gutter scales with the
+  // container instead of sitting at a fixed width that clipped it at every size.
+  const labelW = Math.min(300, Math.max(narrow ? 112 : 200, Math.round(width * 0.3)));
+  const valueW = narrow ? 58 : 88;
   const rowH = narrow ? 30 : 34;
   const barH = narrow ? 13 : 15;
-  const padT = 22;
+  // Room for the reservation label to sit above the plot rather than against the top edge.
+  const padT = 30;
   const padB = 6;
   const plotW = Math.max(40, width - labelW - valueW - 12);
   const height = padT + paths.length * rowH + padB;
