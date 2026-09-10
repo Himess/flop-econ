@@ -16,8 +16,23 @@ export const int = (n: number): string => (Number.isFinite(n) ? GROUPED.format(M
 /** Two decimal places, for money-shaped and ratio-shaped values. */
 export const dp2 = (n: number): string => (Number.isFinite(n) ? TWO_DP.format(n) : "—");
 
-/** Compact, for axis labels and dense cells only. */
-export const compact = (n: number): string => (Number.isFinite(n) ? COMPACT.format(n) : "—");
+/**
+ * Compact, for axis labels and dense cells only.
+ *
+ * Below a thousand, `notation: "compact"` stops abbreviating and just prints the number — with
+ * the one fraction digit the option asked for. Beside $174K and $45.2K that rendered the third
+ * end marker as $567.3, which reads as a different kind of precision rather than a smaller
+ * number. Nothing on this chart is measured to a tenth of a dollar, so under a thousand it
+ * rounds like every other whole figure.
+ *
+ * The threshold is tested against the ROUNDED value, or 999.5 renders as "$1,000" one tick below
+ * a "$1K" — two spellings of the same number on one axis.
+ */
+export const compact = (n: number): string => {
+  if (!Number.isFinite(n)) return "—";
+  const rounded = Math.round(n);
+  return Math.abs(rounded) < 1e3 ? GROUPED.format(rounded) : COMPACT.format(rounded);
+};
 
 /** Signed, for deltas where the direction is the point. */
 export const signed = (n: number): string => {
