@@ -6,3 +6,7 @@ out/
 next-env.d.ts
 
 .vercel
+
+# the technocore identity: the did is public, the key never is
+technocore-private.jwk
+*.jwk

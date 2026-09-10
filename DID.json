@@ -1,0 +1,12 @@
+{
+  "did": "did:key:z6MknZR82Hspszghsb5SEYSu3HZFpSVnYjpLwv7zX2FroeRK",
+  "repo": "https://github.com/Himess/flop-econ",
+  "commit": "3740e73d97ed67252f8da09bc5cf2918da1206ba",
+  "statement": "did:key:z6MknZR82Hspszghsb5SEYSu3HZFpSVnYjpLwv7zX2FroeRK asserts authorship of https://github.com/Himess/flop-econ at commit 3740e73d97ed67252f8da09bc5cf2918da1206ba. This signature proves possession of the key and nothing else.",
+  "nonce": "1789061327",
+  "signedOver": "bind|1789061327|<statement>",
+  "signature": "iA2RvZX-beg9ONP6Y7rqNQVE95V-Apad3Eaj0wskoCRZGSi_1opOxHldNc6gwmahIHrMg064mGUkXyE-cHySAA",
+  "algorithm": "Ed25519",
+  "verify": "node tools/technocore-did.mjs verify bind <nonce> <signature> <statement>",
+  "note": "A signature proves possession of a key. It does not prove identity, honesty, or authorship."
+}

@@ -24,11 +24,19 @@ whole point: **19 of the 119 parameters** an economic model of FLOP needs do not
 (88 `DEFINED`, 12 `PLANNED`, 19 `ABSENT`), and a tool that quietly defaults them is worse than no
 tool.
 
-The file also records **eight places where sources disagree** — the genesis-supply fork
+The file also records **nine places where sources disagree** — the genesis-supply fork
 (resolved 2026-09-10 by D-0438 in favour of 3,500,000,000, issue #1418), the 85/15 against 99/1 fee split (#1352), the
 mempool framing on `/intro/agent/` against §15.6, the ratified-against-running rotation rank, the
-active-set cap (E.41), the testnet unlock (E.38), validator reward liquidity (E.39), and the
-`v0_5_0_rebase` entry below. None of the first seven are errors. Each one changes what a model
+active-set cap (E.41), the testnet unlock (E.38), validator reward liquidity (E.39), the
+**live and unresolved** tokenomics-graphic fork, and the `v0_5_0_rebase` entry below.
+
+Only that eighth one is open: a FLOP tokenomics graphic dated 2026-09-10 puts the validator
+airdrop at 1.20bn and total year-10 supply at 18.1bn, against Appendix A's 305,505,000 and
+17,186,624,000. The difference is exactly the validator line. When this was checked,
+flop.finance was still serving the *older* graphic from origin, so FLOP's own surfaces disagree
+with each other. This file models Appendix A, because the yellow paper's own precedence rule says
+to, and carries 4.4bn as the named alternative — exactly as 3,500,000,000 was carried before
+D-0438 ratified it 19 days later. None of the others are errors. Each one changes what a model
 should compute.
 
 ## The rebase, recorded rather than hidden
