@@ -172,12 +172,31 @@ whole 0.9bn gap is one line: 1,200,000,000 − 305,505,000 = 894,495,000, and
 internally consistent; it uses a genesis figure R9.4 does not, and 0.5% is 94,608,000 over *its*
 own total.
 
-**Recorded as a live `tokenomics_graphic` disagreement, not a resolved one.** The tool continues to
-model Appendix A, because the precedence rule it follows is the yellow paper's own — *"the value of
-record is always Appendix A"* — and 4.4bn carries no ratifying decision. This is the identical
-shape to the genesis fork that preceded D-0438, which took 19 days to ratify. If it ratifies,
-`genesis_supply` becomes 4,400,000,000 and `genesis_validator_airdrop` 1,200,000,000, and the
-break-even valuation rises a further ~11% at the year-1 anchor.
+**Recorded as a live `tokenomics_graphic` disagreement, not a resolved one** — and then, by
+operator decision, **the tool switched to modelling the announced figure.**
+
+| At the year-1 anchor | Ratified (Appendix A) | **Announced (default)** | Δ |
+|---|---|---|---|
+| Genesis | 3,500,000,000 | **4,400,000,000** | +25.7% |
+| Outstanding supply | 7,032,032,000 | **7,932,032,000** | **+12.8%** |
+| Implied price at $300M | $0.042662 | **$0.037821** | **−11.3%** |
+| Break-even valuation | $58,681,447 | **$66,191,837** | **+12.8%** |
+| Supply figure reads | `DEFINED` | **`PLANNED`** | — |
+
+Three constraints on that switch, all enforced rather than asserted:
+
+1. **`genesis_supply` in `params.yaml` is untouched at 3,500,000,000, `DEFINED`.** The announced
+   figure is a separate parameter, `genesis_supply_announced`, marked **`PLANNED`** — it carries no
+   ratifying decision, and a parameter set that marked it otherwise would be lying about its own
+   provenance. A test asserts the announced column can never read `DEFINED`.
+2. **Both are computed side by side, always.** The ratified break-even sits in the genesis drawer,
+   one click away.
+3. **The page says so in its masthead** — a dashed `genesis 4.4bn · announced` chip linking to this
+   disagreement — and `/docs` states it in capitals: the figures divide by the announced 4.4bn,
+   which is an operator decision and not a reading of the specification.
+
+If 4.4bn ratifies, `genesis_supply` moves and the announced column becomes the record. If it is
+withdrawn, one line reverts. Either way the gap stays visible.
 
 **The method fix.** `meta.published_sources` now lists the image assets explicitly, with a note
 that a text-only reconcile cannot see them, and pins the live graphic's sha256. Any future pass
@@ -268,9 +287,10 @@ terminal-inflation cross-check points the same way: `floor_annual_emission` = 94
 of 17.19bn and 0.523% of 18.1bn — the latter is closer to a round 0.5%, which is likely where the
 number came from, but it is not what FLOP published.
 
-**The tool's supply figure needs no correction beyond the genesis fix**, which is applied. It
-computes 17,186,624,000 at year 10, matching Appendix A and the graphic the website serves. Were
-4.4bn to ratify, it would become 18,086,624,000.
+**The tool now computes 18,086,624,000 at year 10**, having switched to the announced genesis. On
+Appendix A it computes 17,186,624,000, matching the graphic flop.finance still serves. Both are
+available; the difference is the 900,000,000 genesis gap, of which 894,495,000 is the validator
+airdrop line.
 
 ## 8. Full parameter diff
 
@@ -323,6 +343,10 @@ Every item this tool's `ABSENT` and `PLANNED` marks rest on is still open, with 
 No mark needed rebucketing.
 
 ## 10. What is still wrong, or unfinished
+
+**Decision taken, and stated on the page:** the tool models the announced 4.4bn genesis. Appendix
+A stays the parameter of record in `params.yaml`, the announced figure is `PLANNED`, both are
+computed, and the masthead says which one is in the headline.
 
 **Fixed and deployed today:**
 - `genesis_supply`, and the inverted scenario labels.

@@ -188,6 +188,45 @@ parameters:
       2026-09-10 states an airdrop of 4.4bn with validators at 1.20bn. Appendix A remains the value
       of record; see disagreements.tokenomics_graphic.
 
+  # ----------------------------------------------------------------------------------------
+  # The announced figures. PLANNED, never DEFINED: they carry no ratifying decision, and a
+  # parameter set that marked them otherwise would be lying about its own provenance. The tool
+  # MODELS these by operator decision (see disagreements.tokenomics_graphic) while Appendix A's
+  # values stay computable side by side, so the gap is always visible.
+
+  - key: genesis_supply_announced
+    value: 4400000000
+    unit: FLOP
+    bucket: PLANNED
+    cite: "FLOP tokenomics graphic, 2026-09-10 (DRAFT); no ratifying decision"
+    note: >-
+      "18.1bn total supply by year 10 ... Airdrop 4.4bn 24.3%". Appendix A still reads
+      genesis_supply = 3,500,000,000 under D-0438, and flop.finance still serves the older 17.2bn
+      graphic from origin - so this LEADS the normative parameter set. Same shape as the workbook's
+      3.5bn before D-0438 ratified it 19 days later.
+      Difference from Appendix A is entirely the validator line: 4,400,000,000 - 3,500,000,000 =
+      900,000,000, against genesis_validator_airdrop_announced - genesis_validator_airdrop =
+      894,495,000 (the 5.5m remainder is the reserve rounding 0.79 -> 0.80).
+
+  - key: genesis_validator_airdrop_announced
+    value: 1200000000
+    unit: FLOP
+    bucket: PLANNED
+    cite: "FLOP tokenomics graphic, 2026-09-10 (DRAFT); no ratifying decision"
+    note: >-
+      "Validators 1.20bn 6.6%" in the airdrop sub-split, against Appendix A's 305,505,000 - roughly
+      4x. This is the single most consequential open figure for a prospective validator, and the
+      two published sources differ by that multiple.
+
+  - key: genesis_reserve_announced
+    value: 800000000
+    unit: FLOP
+    bucket: PLANNED
+    cite: "FLOP tokenomics graphic, 2026-09-10 (DRAFT); no ratifying decision"
+    note: >-
+      "Reserve / Incentives 0.80bn 4.4%", against Appendix A's 794,495,000. Rounding, not a change.
+      Miners and agents are unchanged at 1.20bn each in both.
+
   - key: genesis_miner_airdrop
     value: 1200000000
     unit: FLOP

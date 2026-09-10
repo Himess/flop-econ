@@ -123,7 +123,7 @@ export function ValidatorPanel({
     [s.electricityPrice, powerKw, s.hardwareUsd, s.amortMonths, s.hostingUsdMonth, daUsd],
   );
 
-  const price = useMemo(() => tokenPrice(valuationInputs, "params"), [valuationInputs]);
+  const price = useMemo(() => tokenPrice(valuationInputs, "announced"), [valuationInputs]);
   const usdCost = useMemo(() => annualCostUsd(costs), [costs]);
 
   /**
@@ -164,15 +164,15 @@ export function ValidatorPanel({
 
   const be = useMemo(() => breakEven(validator), [validator]);
   const rev = useMemo(
-    () => reverse(revenueFlop, costs, s.anchorYear, "params"),
+    () => reverse(revenueFlop, costs, s.anchorYear, "announced"),
     [revenueFlop, costs, s.anchorYear],
   );
   const revWorkbook = useMemo(
-    () => reverse(revenueFlop, costs, s.anchorYear, "workbook"),
+    () => reverse(revenueFlop, costs, s.anchorYear, "ratified"),
     [revenueFlop, costs, s.anchorYear],
   );
   const fwd = useMemo(
-    () => forward(revenueFlop, valuationInputs, costs, "params"),
+    () => forward(revenueFlop, valuationInputs, costs, "announced"),
     [revenueFlop, valuationInputs, costs],
   );
 
@@ -455,10 +455,10 @@ export function ValidatorPanel({
           result={rev.breakEvenValuation}
           docs={ANCHORS.breakEvenValuation}
           prefix="$"
-          // The derived cost chain puts an electricity tariff at the head of this figure's cite
-          // list, which is true but reads as though the answer came from a power bill. The mark
-          // names the weaker provenance and the schedule the stronger half rests on.
-          mark="your estimates · Appendix A"
+          // Two things this figure rests on that a reader must not have to dig for: their own
+          // estimates, and the fact that it divides by an ANNOUNCED genesis Appendix A does not
+          // carry. Naming Appendix A here would be the wrong half of the provenance.
+          mark="announced genesis · yours"
         />
         <Headline label="Net per year" result={fwd.netUsdYear} docs={ANCHORS.net} prefix="$" />
         <Headline
@@ -592,12 +592,18 @@ export function ValidatorPanel({
       </Drawer>
 
       <Drawer summary="Price, supply and the two genesis figures">
-        <Line label="Implied token price" result={price} docs={ANCHORS.price} mark="#1418" suffix="USD" />
         <Line
-          label={`Break-even valuation, workbook genesis ${int(GENESIS.workbook.value)}`}
+          label="Implied token price"
+          result={price}
+          docs={ANCHORS.price}
+          mark="announced genesis"
+          suffix="USD"
+        />
+        <Line
+          label={`Break-even valuation, ratified genesis ${int(GENESIS.ratified.value)}`}
           result={revWorkbook.breakEvenValuation}
           docs={ANCHORS.breakEvenValuation}
-          mark="#1418"
+          mark="D-0438"
           suffix="USD"
         />
         <Line

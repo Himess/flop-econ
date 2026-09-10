@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:fa194f8b99770e54)
+// Source: params.yaml (sha256:ea03d758b458f136)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -31,7 +31,7 @@ export interface Disagreement {
   readonly resolved?: string;
 }
 
-export const PARAMS_SHA256 = "fa194f8b99770e54";
+export const PARAMS_SHA256 = "ea03d758b458f136";
 
 export const META = {
   "spec_source": "https://github.com/flop-labs/yellowpaper (yellowpaper.md, main)",
@@ -167,6 +167,30 @@ export const PARAMS: readonly Param[] = [
     "bucket": "DEFINED",
     "cite": "Appendix A (param-genesis_supply); §9.3; R9.4; R9.7; D-0438",
     "note": "CORRECTED 2026-09-10. This tool carried 2,483,460,000 and labelled 3,500,000,000 as an unratified workbook figure. That is backwards: D-0438 ratified 3,500,000,000, superseding the D-0421/D-0435 pool sizes and leaving emission untouched. Appendix A's row reads \"3_500_000_000 FLOP | §9.3 | D-0438\". R9.4 requires it be allocated to exactly four genesis buckets and nothing else. Genesis supply is the divisor for token price, so every dollar figure the tool printed before this correction was wrong - see disagreements.genesis_supply_fork, now marked resolved. A SECOND fork is already open on this same parameter: a tokenomics graphic published 2026-09-10 states an airdrop of 4.4bn with validators at 1.20bn. Appendix A remains the value of record; see disagreements.tokenomics_graphic."
+  },
+  {
+    "key": "genesis_supply_announced",
+    "value": 4400000000,
+    "unit": "FLOP",
+    "bucket": "PLANNED",
+    "cite": "FLOP tokenomics graphic, 2026-09-10 (DRAFT); no ratifying decision",
+    "note": "\"18.1bn total supply by year 10 ... Airdrop 4.4bn 24.3%\". Appendix A still reads genesis_supply = 3,500,000,000 under D-0438, and flop.finance still serves the older 17.2bn graphic from origin - so this LEADS the normative parameter set. Same shape as the workbook's 3.5bn before D-0438 ratified it 19 days later. Difference from Appendix A is entirely the validator line: 4,400,000,000 - 3,500,000,000 = 900,000,000, against genesis_validator_airdrop_announced - genesis_validator_airdrop = 894,495,000 (the 5.5m remainder is the reserve rounding 0.79 -> 0.80)."
+  },
+  {
+    "key": "genesis_validator_airdrop_announced",
+    "value": 1200000000,
+    "unit": "FLOP",
+    "bucket": "PLANNED",
+    "cite": "FLOP tokenomics graphic, 2026-09-10 (DRAFT); no ratifying decision",
+    "note": "\"Validators 1.20bn 6.6%\" in the airdrop sub-split, against Appendix A's 305,505,000 - roughly 4x. This is the single most consequential open figure for a prospective validator, and the two published sources differ by that multiple."
+  },
+  {
+    "key": "genesis_reserve_announced",
+    "value": 800000000,
+    "unit": "FLOP",
+    "bucket": "PLANNED",
+    "cite": "FLOP tokenomics graphic, 2026-09-10 (DRAFT); no ratifying decision",
+    "note": "\"Reserve / Incentives 0.80bn 4.4%\", against Appendix A's 794,495,000. Rounding, not a change. Miners and agents are unchanged at 1.20bn each in both."
   },
   {
     "key": "genesis_miner_airdrop",
@@ -1072,7 +1096,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
   }
 ];
 
-export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_miner_airdrop" | "genesis_agent_airdrop" | "genesis_reserve" | "airdrop_vesting_duration_blocks" | "subsidy_duration_blocks" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_unbonding_slash_lock" | "validator_bond_lock_months" | "network_stake_growth_rate" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_requirement" | "validator_ref_cpu_cores" | "validator_ref_ram_gb" | "validator_ref_nvme_tb" | "validator_ref_link_gbps" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_erasure_expansion_ratio" | "toploc_commitment_bytes" | "toploc_commitment_token_window" | "verified_turn_bytes_base" | "verified_turn_merkle_item_bytes" | "work_recency_window_blocks_gate" | "calibration_min_utilization_ppm" | "calibration_lease_blocks" | "calibration_renewal_min_verified_jobs" | "calibration_renewal_max_age_blocks" | "network_sessions_per_day" | "network_turns_per_session" | "network_tokens_per_turn" | "da_storage_price_usd_gb_month" | "da_bandwidth_volume" | "da_direct_rail_blob_bytes" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
+export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_supply_announced" | "genesis_validator_airdrop_announced" | "genesis_reserve_announced" | "genesis_miner_airdrop" | "genesis_agent_airdrop" | "genesis_reserve" | "airdrop_vesting_duration_blocks" | "subsidy_duration_blocks" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_unbonding_slash_lock" | "validator_bond_lock_months" | "network_stake_growth_rate" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_requirement" | "validator_ref_cpu_cores" | "validator_ref_ram_gb" | "validator_ref_nvme_tb" | "validator_ref_link_gbps" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_erasure_expansion_ratio" | "toploc_commitment_bytes" | "toploc_commitment_token_window" | "verified_turn_bytes_base" | "verified_turn_merkle_item_bytes" | "work_recency_window_blocks_gate" | "calibration_min_utilization_ppm" | "calibration_lease_blocks" | "calibration_renewal_min_verified_jobs" | "calibration_renewal_max_age_blocks" | "network_sessions_per_day" | "network_turns_per_session" | "network_tokens_per_turn" | "da_storage_price_usd_gb_month" | "da_bandwidth_volume" | "da_direct_rail_blob_bytes" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
 
 const BY_KEY = new Map<string, Param>(PARAMS.map((p) => [p.key, p]));
 

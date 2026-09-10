@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AssumptionRef } from "@/model/types";
 import { ValidatorPanel } from "./components/ValidatorPanel";
 import { AgentPanel } from "./components/AgentPanel";
-import { ANCHORS, DOCS_PATH } from "./lib/docs";
+import { ANCHORS, DOCS_PATH, href } from "./lib/docs";
 import { META } from "@/model/params.generated";
 import { Mark } from "./components/Marks";
 import {
@@ -127,6 +127,24 @@ export default function Page() {
             title="The yellow paper release this tool was verified against."
           >
             yp {String(META.spec_status).split(" ")[0]} · {String(META.fetched)}
+          </a>
+          {/*
+            The tool divides by an announced genesis figure that Appendix A does not carry. That is
+            an operator decision, and a decision a reader has to be able to see without opening the
+            documentation — so it sits in the masthead, in the deferred colour, one click from the
+            disagreement that explains it.
+          */}
+          <a
+            href={href(ANCHORS.disagreements)}
+            className="rounded-full px-2 py-[2px] text-[10.5px] no-underline"
+            style={{
+              border: "1px dashed var(--planned)",
+              color: "var(--planned)",
+              fontFamily: "var(--font-mono)",
+            }}
+            title="Genesis supply is the announced 4.4bn, not Appendix A's ratified 3.5bn. Click for why."
+          >
+            genesis 4.4bn · announced
           </a>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[12.5px]">

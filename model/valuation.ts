@@ -8,8 +8,11 @@
  *
  * The supply side is different: it is computed from the emission schedule, which is DEFINED and
  * pinned by emission.test.ts. Only the genesis figure is contested, and that contest is the
- * point — the spec ratifies 2,483,460,000 while the workbook behind FLOP's own calculator uses
- * 3,500,000,000, with no ratifying decision (#1418). Both are computed, always, side by side.
+ * point. It has now forked twice. Appendix A ratifies 3,500,000,000 under D-0438; a FLOP
+ * tokenomics graphic published 2026-09-10 states 4,400,000,000, with a validator airdrop roughly
+ * four times Appendix A's and no ratifying decision. The tool models the announced figure by
+ * operator decision and computes the ratified one beside it, always, so the gap is visible rather
+ * than chosen silently. The announced column can never read DEFINED.
  */
 import { param } from "./params.generated";
 import { blockReward, subsidyPerBlock, BLOCKS_PER_YEAR, eraAtBlock } from "./emission";
@@ -19,27 +22,35 @@ const MONTHS_PER_YEAR = 12;
 
 // ---------------------------------------------------------------------------- supply
 
-export type GenesisScenario = "params" | "workbook";
+/**
+ * Which genesis figure to divide by.
+ *
+ * `announced` is the default the tool now shows, by operator decision: a FLOP tokenomics graphic
+ * published 2026-09-10 states an airdrop of 4.4bn with validators at 1.20bn. It is PLANNED, never
+ * DEFINED — it carries no ratifying decision, and Appendix A still reads 3,500,000,000 under
+ * D-0438. `ratified` is that Appendix A value, kept computable beside it so the gap between what
+ * was announced and what is ratified is always one click away rather than a choice this tool made
+ * silently.
+ */
+export type GenesisScenario = "announced" | "ratified";
 
 export const GENESIS: Record<GenesisScenario, { value: number; label: string; cite: string }> = {
-  params: {
+  ratified: {
     value: num(param("genesis_supply")),
     label: "ratified (D-0438)",
     cite: param("genesis_supply").cite,
   },
-  workbook: {
+  announced: {
     /**
-     * The SUPERSEDED figure, and the labels used to be the other way round.
+     * The announced figure, and the tool's default.
      *
-     * This tool carried 2,483,460,000 as ratified and 3,500,000,000 as an unratified workbook
-     * number. D-0438 ratified 3,500,000,000 and superseded the D-0421/D-0435 pool sizes. Genesis
-     * supply is the divisor for token price, so the inversion reached every dollar figure on the
-     * page — it is kept as the second scenario precisely so the size of that error stays visible
-     * rather than being quietly corrected away.
+     * It leads the specification rather than following it, exactly as 3,500,000,000 did before
+     * D-0438 ratified it nineteen days later. Modelling it is an operator decision; marking it
+     * DEFINED would not be, so it stays PLANNED and every figure derived from it inherits that.
      */
-    value: 2_483_460_000,
-    label: "superseded (D-0421/D-0435)",
-    cite: "superseded by D-0438 on 2026-09-10; Appendix A now reads 3,500,000,000",
+    value: num(param("genesis_supply_announced")),
+    label: "announced 2026-09-10",
+    cite: param("genesis_supply_announced").cite,
   },
 };
 
@@ -84,12 +95,13 @@ export function cumulativeEmission(years: number): Figure {
 export function outstandingSupply(years: number, scenario: GenesisScenario): Figure {
   const g = GENESIS[scenario];
   const emitted = cumulativeEmission(years);
-  const isParams = scenario === "params";
+  const isRatified = scenario === "ratified";
   return figure({
     value: g.value + emitted.value,
     unit: "FLOP",
-    // The workbook genesis is not a ratified value, so that column can never read DEFINED.
-    buckets: isParams ? ["DEFINED"] : ["PLANNED"],
+    // Only the Appendix A value can read DEFINED. The announced figure has no ratifying decision,
+    // so every supply, price and valuation figure computed from it inherits PLANNED.
+    buckets: isRatified ? ["DEFINED"] : ["PLANNED"],
     cites: [g.cite, ...emitted.cites],
     derivation:
       `genesis ${g.value.toLocaleString("en-US")} (${g.label}) + ` +
@@ -176,8 +188,8 @@ export function tokenPrice(inp: ValuationInputs, scenario: GenesisScenario): Com
 
 /** How far apart the two genesis scenarios put the price, as a fraction. */
 export function genesisSpread(inp: ValuationInputs): Computed {
-  const a = tokenPrice(inp, "params");
-  const b = tokenPrice(inp, "workbook");
+  const a = tokenPrice(inp, "announced");
+  const b = tokenPrice(inp, "ratified");
   if (isBlocked(a)) return a;
   if (isBlocked(b)) return b;
   if (b.value === 0) return blocked([{ key: "genesis_spread", cite: "-", label: "a non-zero price" }]);
@@ -185,10 +197,10 @@ export function genesisSpread(inp: ValuationInputs): Computed {
     value: a.value / b.value - 1,
     unit: "fraction",
     buckets: ["PLANNED"],
-    cites: [GENESIS.workbook.cite],
+    cites: [GENESIS.announced.cite],
     derivation:
-      `params price / workbook price - 1. The workbook's larger genesis dilutes the same valuation ` +
-      `across more tokens, so its implied price is lower.`,
+      `announced price / ratified price - 1. The announced genesis is the larger pool, so it ` +
+      `dilutes the same valuation across more tokens and its implied price is the lower one.`,
   });
 }
 

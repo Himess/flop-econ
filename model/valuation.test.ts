@@ -53,28 +53,43 @@ describe("supply model", () => {
   });
 
   it("outstanding supply adds genesis to cumulative emission", () => {
-    for (const sc of ["params", "workbook"] as const) {
+    for (const sc of ["ratified", "announced"] as const) {
       expect(outstandingSupply(1, sc).value).toBe(GENESIS[sc].value + cumulativeEmission(1).value);
     }
   });
 
   /**
-   * The labels inverted on 2026-09-10. D-0438 ratified 3,500,000,000 and superseded the
-   * D-0421/D-0435 pool sizes; this tool had been carrying 2,483,460,000 as the ratified value and
-   * 3,500,000,000 as an unratified workbook figure — backwards, on a public site, on the divisor
-   * for every dollar figure. The second column is now the superseded one and can never read
-   * DEFINED, for the mirror-image reason it could not before.
+   * The genesis figure has forked twice, and only one column may ever read DEFINED.
+   *
+   * D-0438 ratified 3,500,000,000 (Appendix A). A FLOP tokenomics graphic published 2026-09-10
+   * states 4,400,000,000 with a validator airdrop roughly 4x Appendix A's, and carries no
+   * ratifying decision. The tool models the announced figure by operator decision — but modelling
+   * it and vouching for it are different acts, and this test is the line between them.
    */
-  it("the superseded genesis column can never read DEFINED", () => {
-    expect(outstandingSupply(1, "params").bucket).toBe("DEFINED");
-    expect(outstandingSupply(1, "workbook").bucket).toBe("PLANNED");
-    expect(outstandingSupply(1, "workbook").cites.join(" ")).toContain("D-0438");
+  it("the announced genesis column can never read DEFINED", () => {
+    expect(outstandingSupply(1, "ratified").bucket).toBe("DEFINED");
+    expect(outstandingSupply(1, "announced").bucket).toBe("PLANNED");
+    expect(param("genesis_supply_announced").bucket).toBe("PLANNED");
   });
 
-  it("the value of record is the ratified 3.5bn, not the superseded 2.48bn", () => {
-    expect(GENESIS.params.value).toBe(3_500_000_000);
-    expect(GENESIS.workbook.value).toBe(2_483_460_000);
+  it("the value of record is Appendix A, whatever the tool shows by default", () => {
+    expect(GENESIS.ratified.value).toBe(3_500_000_000);
+    expect(GENESIS.announced.value).toBe(4_400_000_000);
     expect(num(param("genesis_supply"))).toBe(3_500_000_000);
+    expect(num(param("genesis_supply_announced"))).toBe(4_400_000_000);
+  });
+
+  /** The whole 0.9bn difference is the validator airdrop line. */
+  it("the two genesis figures differ almost entirely on the validator airdrop", () => {
+    const supplyGap = num(param("genesis_supply_announced")) - num(param("genesis_supply"));
+    const validatorGap =
+      num(param("genesis_validator_airdrop_announced")) - num(param("genesis_validator_airdrop"));
+    expect(supplyGap).toBe(900_000_000);
+    expect(validatorGap).toBe(894_495_000);
+    // The remainder is the reserve rounding 794,495,000 -> 800,000,000.
+    expect(supplyGap - validatorGap).toBe(
+      num(param("genesis_reserve_announced")) - num(param("genesis_reserve")),
+    );
   });
 
   /** R9.4: genesis MUST be allocated to exactly four buckets and nothing else. */
@@ -88,48 +103,48 @@ describe("supply model", () => {
   });
 
   it("says outstanding, not circulating, and names why", () => {
-    expect(outstandingSupply(1, "params").derivation).toMatch(/E\.38/);
+    expect(outstandingSupply(1, "ratified").derivation).toMatch(/E\.38/);
   });
 });
 
 describe("price", () => {
   it("valuation mode divides by outstanding supply at the anchor year", () => {
-    const p = tokenPrice(VAL, "params");
+    const p = tokenPrice(VAL, "ratified");
     if (isBlocked(p)) throw new Error("unexpected block");
-    expect(p.value).toBeCloseTo(300_000_000 / outstandingSupply(1, "params").value, 12);
+    expect(p.value).toBeCloseTo(300_000_000 / outstandingSupply(1, "ratified").value, 12);
   });
 
   it("the two genesis scenarios move the price materially at the same valuation", () => {
-    const a = tokenPrice(VAL, "params");
-    const b = tokenPrice(VAL, "workbook");
+    const a = tokenPrice(VAL, "ratified");
+    const b = tokenPrice(VAL, "announced");
     if (isBlocked(a) || isBlocked(b)) throw new Error("unexpected block");
-    // Ratified genesis is now the LARGER pool, so the ratified price is the lower one. The
-    // direction of this inequality flipping is the whole correction.
-    expect(a.value).toBeLessThan(b.value);
+    // The announced genesis is the larger pool, so it dilutes the same valuation across more
+    // tokens and its implied price is the lower one.
+    expect(b.value).toBeLessThan(a.value);
     const spread = genesisSpread(VAL);
     if (isBlocked(spread)) throw new Error("unexpected block");
     expect(Math.abs(spread.value)).toBeGreaterThan(0.05);
   });
 
   it("direct mode takes the price as given and does not consult supply", () => {
-    const p = tokenPrice({ mode: "direct", pricePerToken: 2, anchorYear: 1 }, "params");
+    const p = tokenPrice({ mode: "direct", pricePerToken: 2, anchorYear: 1 }, "ratified");
     if (isBlocked(p)) throw new Error("unexpected block");
     expect(p.value).toBe(2);
     expect(p.derivation).toMatch(/not consulted/);
     // Same answer under either genesis scenario, because supply is not used.
-    const q = tokenPrice({ mode: "direct", pricePerToken: 2, anchorYear: 1 }, "workbook");
+    const q = tokenPrice({ mode: "direct", pricePerToken: 2, anchorYear: 1 }, "announced");
     if (isBlocked(q)) throw new Error("unexpected block");
     expect(q.value).toBe(2);
   });
 
   it("blocks without a valuation, and without a price in direct mode", () => {
-    expect(isBlocked(tokenPrice({ mode: "valuation", anchorYear: 1 }, "params"))).toBe(true);
-    expect(isBlocked(tokenPrice({ mode: "direct", anchorYear: 1 }, "params"))).toBe(true);
+    expect(isBlocked(tokenPrice({ mode: "valuation", anchorYear: 1 }, "ratified"))).toBe(true);
+    expect(isBlocked(tokenPrice({ mode: "direct", anchorYear: 1 }, "ratified"))).toBe(true);
   });
 
   it("a price is NEVER bucketed DEFINED, in either mode", () => {
     for (const inp of [VAL, { mode: "direct" as const, pricePerToken: 2, anchorYear: 1 }]) {
-      for (const sc of ["params", "workbook"] as const) {
+      for (const sc of ["ratified", "announced"] as const) {
         const p = tokenPrice(inp, sc);
         if (isBlocked(p)) continue;
         expect(p.bucket, `${inp.mode}/${sc}`).toBe("ABSENT");
@@ -182,7 +197,7 @@ describe("costs", () => {
 
 describe("forward", () => {
   it("revenue is FLOP earned times price, and monthly is a twelfth of annual", () => {
-    const f = forward(REV_FLOP, VAL, COSTS, "params");
+    const f = forward(REV_FLOP, VAL, COSTS, "ratified");
     if (isBlocked(f.price) || isBlocked(f.revenueUsdYear) || isBlocked(f.revenueUsdMonth)) {
       throw new Error("unexpected block");
     }
@@ -191,13 +206,13 @@ describe("forward", () => {
   });
 
   it("payback refuses rather than returning infinity when net is not positive", () => {
-    const f = forward(REV_FLOP, { ...VAL, valuationUsd: 1 }, COSTS, "params");
+    const f = forward(REV_FLOP, { ...VAL, valuationUsd: 1 }, COSTS, "ratified");
     expect(isBlocked(f.paybackMonths)).toBe(true);
     if (isBlocked(f.paybackMonths)) expect(f.paybackMonths.message + f.paybackMonths.detail).toMatch(/never pays back/);
   });
 
   it("every forward output is ABSENT-bucketed — a dollar figure is never a spec value", () => {
-    const f = forward(REV_FLOP, VAL, COSTS, "params");
+    const f = forward(REV_FLOP, VAL, COSTS, "ratified");
     for (const [name, r] of Object.entries(f)) {
       if (isBlocked(r)) continue;
       expect(r.bucket, name).toBe("ABSENT");
@@ -207,44 +222,44 @@ describe("forward", () => {
 
 describe("reverse — the decision criterion", () => {
   it("break-even price is annual cost divided by annual FLOP earned", () => {
-    const r = reverse(REV_FLOP, COSTS, 1, "params");
+    const r = reverse(REV_FLOP, COSTS, 1, "ratified");
     const c = annualCostUsd(COSTS);
     if (isBlocked(r.breakEvenPrice) || isBlocked(c)) throw new Error("unexpected block");
     expect(r.breakEvenPrice.value).toBeCloseTo(c.value / REV_FLOP, 12);
   });
 
   it("at exactly the break-even price, forward net is zero", () => {
-    const r = reverse(REV_FLOP, COSTS, 1, "params");
+    const r = reverse(REV_FLOP, COSTS, 1, "ratified");
     if (isBlocked(r.breakEvenPrice)) throw new Error("unexpected block");
-    const f = forward(REV_FLOP, { mode: "direct", pricePerToken: r.breakEvenPrice.value, anchorYear: 1 }, COSTS, "params");
+    const f = forward(REV_FLOP, { mode: "direct", pricePerToken: r.breakEvenPrice.value, anchorYear: 1 }, COSTS, "ratified");
     if (isBlocked(f.netUsdYear)) throw new Error("unexpected block");
     expect(Math.abs(f.netUsdYear.value)).toBeLessThan(1e-6);
   });
 
   it("break-even valuation is the break-even price times supply at the anchor", () => {
-    const r = reverse(REV_FLOP, COSTS, 1, "params");
+    const r = reverse(REV_FLOP, COSTS, 1, "ratified");
     if (isBlocked(r.breakEvenPrice) || isBlocked(r.breakEvenValuation)) throw new Error("unexpected block");
     expect(r.breakEvenValuation.value).toBeCloseTo(r.breakEvenPrice.value * r.supplyAtAnchor.value, 4);
   });
 
-  it("the superseded genesis figure moves the user's own threshold", () => {
-    const a = reverse(REV_FLOP, COSTS, 1, "params");
-    const b = reverse(REV_FLOP, COSTS, 1, "workbook");
+  it("the announced genesis figure moves the user's own threshold", () => {
+    const a = reverse(REV_FLOP, COSTS, 1, "ratified");
+    const b = reverse(REV_FLOP, COSTS, 1, "announced");
     if (isBlocked(a.breakEvenValuation) || isBlocked(b.breakEvenValuation)) throw new Error("unexpected block");
     // Same break-even PRICE (costs and FLOP revenue are unchanged), different valuation. The
-    // ratified pool is now the larger one, so the ratified break-even valuation is the higher
-    // number — the inequality flipped with D-0438, and this is the figure the tool headlines.
-    expect(a.breakEvenValuation.value).toBeGreaterThan(b.breakEvenValuation.value);
+    // announced pool is the larger one, so the break-even valuation the tool headlines is the
+    // higher number — and a reader who assumes Appendix A gets a lower threshold.
+    expect(b.breakEvenValuation.value).toBeGreaterThan(a.breakEvenValuation.value);
   });
 
   it("blocks rather than dividing by zero revenue", () => {
-    expect(isBlocked(reverse(0, COSTS, 1, "params").breakEvenPrice)).toBe(true);
+    expect(isBlocked(reverse(0, COSTS, 1, "ratified").breakEvenPrice)).toBe(true);
   });
 });
 
 describe("sensitivity", () => {
   it("ranks the inputs by how much each alone moves annual net", () => {
-    const ranked = sensitivity(REV_FLOP, VAL, COSTS, "params");
+    const ranked = sensitivity(REV_FLOP, VAL, COSTS, "ratified");
     expect(ranked.length).toBeGreaterThan(2);
     for (let i = 1; i < ranked.length; i++) {
       expect(ranked[i - 1]!.effect).toBeGreaterThanOrEqual(ranked[i]!.effect);
@@ -252,7 +267,7 @@ describe("sensitivity", () => {
   });
 
   it("records direction, so the user can tell a lever from a cost", () => {
-    const ranked = sensitivity(REV_FLOP, VAL, COSTS, "params");
+    const ranked = sensitivity(REV_FLOP, VAL, COSTS, "ratified");
     const valuation = ranked.find((r) => r.key === "network_valuation_usd");
     const hardware = ranked.find((r) => r.key === "hardware_cost_usd");
     expect(valuation?.direction).toBe("raises");
@@ -260,6 +275,6 @@ describe("sensitivity", () => {
   });
 
   it("returns nothing rather than guessing when net cannot be computed", () => {
-    expect(sensitivity(REV_FLOP, VAL, {}, "params")).toEqual([]);
+    expect(sensitivity(REV_FLOP, VAL, {}, "ratified")).toEqual([]);
   });
 });
