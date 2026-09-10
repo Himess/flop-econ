@@ -1020,6 +1020,16 @@ parameters:
     cite: "Appendix A; §12.1; D-0403"
     note: "2 hours. Non-response defaults to a fraud verdict (R12.1f)."
 
+  - key: channel_attestation_pause_cap_blocks
+    value: 14400
+    unit: blocks
+    bucket: DEFINED
+    cite: "§2.2 (window table); §13 O1"
+    note: >-
+      4 h. "max per-channel pause of attestation-dependent clocks (§13 O1) - scoped pause, never a
+      global halt". The one thing that can stretch a session's clocks without a dispute, so it
+      belongs on an agent's exposure timeline.
+
   - key: channel_ack_window_blocks
     value: 600
     unit: blocks

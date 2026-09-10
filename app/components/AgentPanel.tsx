@@ -17,6 +17,7 @@ import { ANCHORS, href } from "../lib/docs";
 import type { Scenario } from "../lib/state";
 import { Answers, Block, Card, Drawer, Field, Headline, Inputs, Line, Mark } from "./Marks";
 import { PathChart } from "./PathChart";
+import { SessionTimeline } from "./SessionTimeline";
 
 /**
  * The table's column is "you recover", so cooperative settle is a truthful 0 — and it sits three
@@ -145,6 +146,23 @@ export function AgentPanel({
           }
         >
           <PathChart paths={paths} escrow={s.escrow ?? 0} />
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <Card
+          title="How long your escrow is exposed"
+          aside={
+            <a
+              href={href(ANCHORS.closePaths)}
+              className="underline decoration-dotted underline-offset-[3px]"
+              style={{ color: "var(--ink-3)" }}
+            >
+              §2.2 window table
+            </a>
+          }
+        >
+          <SessionTimeline />
         </Card>
       </div>
 

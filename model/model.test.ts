@@ -37,6 +37,7 @@ import {
   tariff,
   tierComparison,
   topUp,
+  sessionWindows,
 } from "./agent";
 
 // --------------------------------------------------------------------- params integrity
@@ -514,5 +515,39 @@ describe("provenance", () => {
     expect(p.value).toBeUndefined();
     expect(p.cite).toContain("E.40");
     expect(p.note).toMatch(/pure cost centres/);
+  });
+});
+
+describe("session windows — the agent's exposure axis", () => {
+  const w = sessionWindows();
+  const by = (k: string) => w.find((x) => x.key === k)!;
+
+  it("reads the five §2.2 windows, in ascending order", () => {
+    expect(w.map((x) => x.key)).toEqual(["ack", "response", "pause", "dispute", "retention"]);
+    for (let i = 1; i < w.length; i++) expect(w[i]!.days).toBeGreaterThan(w[i - 1]!.days);
+  });
+
+  it("resolves each to the duration the window table states", () => {
+    expect(by("ack").days * 24 * 60).toBeCloseTo(10, 6);
+    expect(by("response").days * 24).toBeCloseTo(2, 6);
+    expect(by("pause").days * 24).toBeCloseTo(4, 6);
+    expect(by("dispute").days).toBeCloseTo(7, 6);
+    expect(by("retention").days).toBeCloseTo(14, 6);
+  });
+
+  /**
+   * "MUST be >= challenge window — enforced by integrity_test at build time." The tool asserts the
+   * same invariant, because an agent's evidence outliving its contest window is the only reason a
+   * dispute can be adjudicated at all.
+   */
+  it("keeps DA retention at or above the dispute window", () => {
+    expect(by("retention").days).toBeGreaterThanOrEqual(by("dispute").days);
+  });
+
+  it("gives every window a citation and an effect", () => {
+    for (const x of w) {
+      expect(x.cite, x.key).toBeTruthy();
+      expect(x.effect.length, x.key).toBeGreaterThan(10);
+    }
   });
 });

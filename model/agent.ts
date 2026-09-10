@@ -460,3 +460,75 @@ export function tierComparison(): TierComparison {
     cites: ["R3.2", "R12.1c", "E.33", param("soft_tier_spot_check_rate_ppm").cite],
   };
 }
+
+// ---------------------------------------------------------------------------- session windows
+
+/**
+ * How long an agent's escrow is exposed, and what can extend it.
+ *
+ * The close-path table answers "how much do I get back". It cannot answer "and when", which for
+ * anyone reserving capital is the other half of the question. §2.2's window table answers it
+ * normatively, so this reads the windows rather than inventing a lifecycle:
+ *
+ *   ack        10 min  miner ratifies a force_open, or the agent reclaims (`expire_force_open`)
+ *   response    2 h    the miner's window to answer a named contested turn; miss => fraud default
+ *   pause cap   4 h    the most a per-channel attestation outage can stall the clocks (§13 O1)
+ *   dispute     7 d    force-settle contestation — TIME TO OPEN ONLY, not to resolve
+ *   retention  14 d    DA transcript retrievability; MUST be >= the dispute window
+ *
+ * The reading that matters: a cooperative settle ends at settlement, but a force_settle can be
+ * contested for seven days, and the evidence that decides it is guaranteed to exist for fourteen.
+ * Escrow is exposed across that span, not across the session.
+ */
+export interface SessionWindow {
+  key: string;
+  label: string;
+  /** Days from the moment the channel opens. */
+  days: number;
+  cite: string;
+  /** What it does to the agent's money, in one clause. */
+  effect: string;
+}
+
+const BLOCKS_PER_DAY = num(param("blocks_per_year")) / 365;
+
+export function sessionWindows(): readonly SessionWindow[] {
+  const d = (key: string) => num(param(key as never)) / BLOCKS_PER_DAY;
+  return [
+    {
+      key: "ack",
+      label: "force_open ack",
+      days: d("channel_ack_window_blocks"),
+      cite: param("channel_ack_window_blocks").cite,
+      effect: "miner ratifies, or you reclaim the escrow",
+    },
+    {
+      key: "response",
+      label: "dispute response",
+      days: d("channel_dispute_response_window_blocks"),
+      cite: param("channel_dispute_response_window_blocks").cite,
+      effect: "the miner answers a contested turn; a miss is a fraud default",
+    },
+    {
+      key: "pause",
+      label: "attestation pause cap",
+      days: d("channel_attestation_pause_cap_blocks"),
+      cite: param("channel_attestation_pause_cap_blocks").cite,
+      effect: "the most an outage can stall the clocks",
+    },
+    {
+      key: "dispute",
+      label: "dispute window",
+      days: d("channel_dispute_window_blocks"),
+      cite: param("channel_dispute_window_blocks").cite,
+      effect: "time to OPEN a contest, not to resolve one",
+    },
+    {
+      key: "retention",
+      label: "DA retention",
+      days: d("da_ephemeral_retention_blocks"),
+      cite: param("da_ephemeral_retention_blocks").cite,
+      effect: "after this the evidence is prunable",
+    },
+  ];
+}
