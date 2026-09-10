@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:9e65836295082807)
+// Source: params.yaml (sha256:5ca8bc30fd1803a4)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -31,7 +31,7 @@ export interface Disagreement {
   readonly resolved?: string;
 }
 
-export const PARAMS_SHA256 = "9e65836295082807";
+export const PARAMS_SHA256 = "5ca8bc30fd1803a4";
 
 export const META = {
   "spec_source": "https://github.com/flop-labs/yellowpaper (yellowpaper.md, main)",
@@ -42,6 +42,15 @@ export const META = {
   "fetch_bytes": 248811,
   "fetch_sha256": "cb414e5cdfe72eec",
   "fetch_note": "REBASED onto the initial public release. The prior basis was a 2026-09-09 fetch of the pre-publication draft (spec/yp.txt, 203,145 B), kept as evidence because three load-bearing statements changed between them. Re-verified all 29 quoted claims against the published text: 26 unchanged, 3 reversed - see the v0_5_0_rebase disagreement.",
+  "published_sources": [
+    "https://github.com/flop-labs/yellowpaper (yellowpaper.md) - value of record is Appendix A",
+    "https://flop.finance/intro/yellowpaper/ - the same document, rendered",
+    "https://flop.finance/intro/revenue/ - cash-flow model and ratification notes",
+    "https://flop.finance/teaser/ - allocation tables in HTML",
+    "https://flop.finance/assets/tokenomics.png - the tokenomics GRAPHIC, sha256 e05656909de1a8a9",
+    "https://flop.finance/intro/{miner,validator,agent,verification}/ and /"
+  ],
+  "source_note": "IMAGE ASSETS ARE PART OF THE PUBLISHED SURFACE. A reconcile that greps page text cannot read a figure rendered inside a PNG, and on 2026-09-10 a superseded version of tokenomics.png carried a total supply and a validator airdrop that contradicted Appendix A. Any future reconcile MUST fetch and LOOK AT the graphics, and pin their hashes. See disagreements.tokenomics_graphic.",
   "extraction": "yellowpaper.md from the upstream repository, not vendored here - get it from spec_source and check it against fetch_sha256.",
   "superseded_basis": "A 2026-09-09 fetch of the pre-publication draft (203,145 B), retained locally as evidence of the three reversed statements. Not published: it is FLOP's document, not this repository's.",
   "appendix_a_rows": {
@@ -986,6 +995,16 @@ export const PARAMS: readonly Param[] = [
 ];
 
 export const DISAGREEMENTS: readonly Disagreement[] = [
+  {
+    "id": "tokenomics_graphic",
+    "resolved": "2026-09-10",
+    "spec_says": "Appendix A: genesis_supply = 3,500,000,000 split across four buckets - miners 1,200,000,000, validators 305,505,000, agents 1,200,000,000, reserve 794,495,000 (R9.4, D-0438/D-0435). Year-10 cumulative supply computes to 17,186,624,000.",
+    "downstream_says": "A superseded version of flop.finance/assets/tokenomics.png stated \"18.1bn total supply by year 10\", \"0.5% terminal inflation / yr\", and an Airdrop of 4.4bn (24.3%) broken down as miners 1.20bn, VALIDATORS 1.20bn, agents 1.20bn, reserve 0.80bn. That validator line is roughly 4x Appendix A, and it accounts for the whole 0.9bn gap between 18.1bn and 17.19bn.",
+    "status": "SUPERSEDED, not live. The asset now served at that URL reads \"17.2bn total supply by year 10\", \"0.6% terminal inflation\", Airdrop 3.5bn (20.4%), and an airdrop sub-split of miners 1.20bn / validators 0.31bn / agents 1.20bn / reserve 0.79bn - every figure agreeing with Appendix A and with this tool. The teaser page's own alt text describes the current version. Recorded because the older graphic circulated: anyone holding that screenshot has a validator airdrop roughly 4x too high and a total supply 0.9bn too high.",
+    "quote": "\"// 18.1bn total supply by year 10 // 0.5% terminal inflation / yr ... Airdrop 4.4bn 24.3% - Miners 1.20bn 6.6% - Validators 1.20bn 6.6% - Agents 1.20bn 6.6% - Reserve / Incentives 0.80bn 4.4%\" (superseded flop.finance tokenomics graphic, marked DRAFT)",
+    "tracking": "no issue number; both versions carry a preliminary/draft disclaimer",
+    "handling": "Model Appendix A. The live graphic already agrees with it, so there is nothing to reconcile in the numbers - only the record of what circulated. Live asset archived at spec/assets/tokenomics-live-2026-09-10.png, sha256 e05656909de1a8a9."
+  },
   {
     "id": "v0_5_0_rebase",
     "spec_says": "Published v0.5.0, §15.1: \"A validator function MUST NOT require executing inference, producing PoUI proofs, or owning a GPU or TEE: committee eligibility is verification liveness (§15.4), and re-execution is a checker duty (§3.5).\" §15.3: \"The one heavy leg is DA storage/serving; no validator duty requires a GPU or TEE.\"",

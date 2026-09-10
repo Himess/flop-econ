@@ -8,8 +8,10 @@ backwards. D-0438 ratified 3,500,000,000. Genesis supply is the divisor for toke
 dollar figure the site published was wrong by a measurable amount: **break-even valuation was 16.9%
 too low, implied token price 14.5% too high.** Fixed and deployed.
 
-**Three of the brief's other four claims did not survive checking**, and I have set out below what
-the published sources actually say rather than recording disagreements that do not exist.
+**On the brief's other claims:** the 18.1bn total and the 1.20bn validator airdrop are real and
+come from the official tokenomics graphic — which a text-only reconcile cannot read, and which my
+first pass therefore dismissed. Both are **superseded**: the asset now served states 17.2bn and a
+0.31bn validator airdrop, agreeing with Appendix A throughout. Recorded, with the method fixed.
 
 ---
 
@@ -85,10 +87,18 @@ this tool published.
 
 ## 4. Validator airdrop — 305,505,000 against "1.20bn"
 
-**Settled: there is no contradiction. This was a misreading of two different tables.**
+> **Corrected after first publication.** My first answer here was "there is no contradiction, this
+> is a misreading of two tables." That was wrong, and wrong in a way my method guaranteed: the
+> claim lives in **`flop.finance/assets/tokenomics.png`**, and I searched page *text*. A grep
+> cannot read a figure rendered inside an image. See §4b.
 
-There is **no tokenomics page** on flop.finance. The sitemap lists ten URLs; the allocation tables
-are on `/teaser/`, and it carries **two of them**.
+**Settled: the contradiction was real, in a version of the official graphic that has since been
+replaced. The asset now live agrees with Appendix A.**
+
+There is no tokenomics *page* on flop.finance — the sitemap lists ten URLs. The allocation figures
+appear in two places: the `/teaser/` HTML tables, and a graphic embedded on that page. The HTML
+tables are **two of them**, and reading them together was where the "two tables" answer came
+from.
 
 The first is headed *"Cumulative supply to year 10, and the year-10 allocation split"*, with the
 column *"Share of year-10 supply"*:
@@ -107,6 +117,52 @@ The second table, immediately below, is the genesis breakdown:
 
 **305,505,000, matching Appendix A exactly.** Its four rows sum to 3,500,000,000 and reproduce
 Appendix A's four buckets, `genesis_reserve` included. Nothing to record.
+
+## 4b. The tokenomics graphic — what my method missed
+
+`/teaser/` embeds `<img src="/assets/tokenomics.png">`. Two versions are in play.
+
+**Superseded version** (circulating; marked DRAFT):
+
+| | |
+|---|---|
+| Total supply, year 10 | **18.1bn** |
+| Terminal inflation | **0.5% / yr** |
+| Airdrop | **4.4bn (24.3%)** |
+| — Miners | 1.20bn 6.6% |
+| — **Validators** | **1.20bn 6.6%** |
+| — Agents | 1.20bn 6.6% |
+| — Reserve / Incentives | 0.80bn 4.4% |
+
+**Currently served** (sha256 `e05656909de1a8a9`, fetched 2026-09-10, archived at
+`spec/assets/tokenomics-live-2026-09-10.png`):
+
+| Figure | Live graphic | Appendix A / this tool | Agrees |
+|---|---|---|---|
+| Total supply, year 10 | **17.2bn** | 17,186,624,000 | ✓ |
+| Terminal inflation | **0.6% / yr** | 0.550% | ✓ |
+| Airdrop | **3.5bn (20.4%)** | `genesis_supply` 3,500,000,000 | ✓ |
+| — Miners | 1.20bn 7.0% | 1,200,000,000 | ✓ |
+| — **Validators** | **0.31bn 1.8%** | 305,505,000 | ✓ |
+| — Agents | 1.20bn 7.0% | 1,200,000,000 | ✓ |
+| — Reserve / Incentives | 0.79bn 4.6% | 794,495,000 | ✓ |
+| Team + Foundation | 2.0bn 11.4% | 1,955,232,000 (R9.3) | ✓ |
+
+The `/teaser/` page's own `alt` text describes the current version — *"rising to 17.2bn … airdrop
+3.5bn (20.4%) … validators 0.31bn"* — so the page and its graphic are consistent today.
+
+**The brief was right and I was wrong.** The 4× validator discrepancy existed, and the entire
+0.9bn gap between 18.1bn and 17.19bn is that one line: 1,200,000,000 − 305,505,000 = 894,495,000.
+The older graphic was internally consistent — it simply used a 4.4bn genesis instead of R9.4's
+3.5bn, and 0.5% is 94,608,000 over *its* total.
+
+Recorded as the `tokenomics_graphic` disagreement, marked superseded with both versions in their
+own figures, because anyone holding the older screenshot has a validator airdrop roughly four
+times too high.
+
+**The method fix.** `meta.published_sources` now lists the image assets explicitly, with a note
+that a text-only reconcile cannot see them, and pins the live graphic's sha256. Any future pass
+must fetch the graphics and look at them.
 
 ## 5. Team + Foundation 2.0bn
 
@@ -149,10 +205,18 @@ rate; the active set drives pool share. They have never been mixed.
 
 ## 7. The 18.1bn question
 
-**The figure does not appear on any published FLOP page.** I fetched all eight pages in the sitemap
-(`/`, `/intro/`, `/intro/miner/`, `/intro/validator/`, `/intro/agent/`, `/intro/verification/`,
-`/intro/revenue/`, `/teaser/`) and searched every one for `18.1`, `18,100,000,000`,
-`terminal inflation` and `0.5%`. **Zero hits.**
+> **Corrected after first publication.** I originally wrote that 18.1bn "does not appear on any
+> published FLOP page". It appeared in the tokenomics graphic (§4b) — which my text search could
+> not read. The figure is real; it is also superseded.
+
+**18.1bn came from the superseded graphic, and it is arithmetically consistent with it.** I fetched
+all eight pages in the sitemap and searched their *text* for `18.1`, `18,100,000,000`,
+`terminal inflation` and `0.5%` — zero hits, because the figures are in a PNG. The graphic now
+served states **17.2bn** and **0.6%**.
+
+18.1bn follows from a 4.4bn genesis: 17,186,624,000 + 894,495,000 (the validator-airdrop
+difference) = 18,081,119,000, which rounds to 18.1bn. And 94,608,000 ÷ 18.1bn = 0.523%, the stated
+0.5%. The older graphic was self-consistent; it just used a genesis figure R9.4 does not.
 
 What *is* published is the teaser's year-10 table, and it reconciles with the emission schedule.
 The tool's own supply model, run to year 10:
@@ -256,6 +320,12 @@ No mark needed rebucketing.
 - `airdrop_vesting_duration_blocks` (90-day linear) is recorded but **not modelled**. It affects
   when genesis tokens actually circulate, which is E.38 territory.
 - The **year-1 anchor is a choice**, not a spec figure. It is adjustable and marked.
+
+**A second process failure, and the more interesting one:** the first version of this report
+dismissed a real contradiction because my reconcile reads text and the claim was in an image. I
+reached the right conclusion about the *current* sources by luck of timing, not by method — the
+live graphic happens to agree with Appendix A. Image assets are now in the source hierarchy with
+a pinned hash and an explicit instruction to look at them.
 
 **Process, stated plainly:** this tool published a wrong divisor on a public site for roughly one
 day. Not a rounding error — 16.9% on the headline figure. It was caught by an exhaustive diff, not
