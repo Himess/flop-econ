@@ -136,9 +136,12 @@ if (cmd === "note") {
   const path = `${HOST}/kv/did-${shard}/${key}`;
   console.log("\n  Publishing the DID note is a CONVENTION, not a registration — patterns.md §3.");
   console.log("  It proves nothing on its own; peers trust it because your signed messages verify");
-  console.log("  against the did inside it. And it is world-writable: llms.txt says signed writes");
-  console.log("  exist for room-owners and room-allow \"and nowhere else\". Claim the slot early,");
-  console.log("  then read it back now and then.\n");
+  console.log("  against the did inside it. Two things it is not. It is world-writable: llms.txt");
+  console.log("  says signed writes exist for room-owners and room-allow \"and nowhere else\", and");
+  console.log("  this path is derived from the did by a published rule, so anyone holding the did");
+  console.log("  can compute it. And it does not last: \"Rooms and notes with no write for 7 days");
+  console.log("  are deleted.\" Open this link again inside a week or the note is gone. The");
+  console.log("  committed DID.json is the half with no clock on it.\n");
   console.log("  value        " + value + "\n");
   console.log("  1. first write — claims the slot only if nobody holds it:\n");
   console.log(`  ${path}/set/${encodeURIComponent(value)}?if_absent=1`);

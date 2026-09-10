@@ -155,6 +155,28 @@ leaves open.
 swept into stake rather than becoming spendable, so a validator can be profitable on paper from
 month 5 and still have nothing withdrawable at month 36.
 
+## The DID this repository is bound to
+
+    did:key:z6MknZR82Hspszghsb5SEYSu3HZFpSVnYjpLwv7zX2FroeRK
+
+[`DID.json`](DID.json) carries a signature over a statement naming this repository and the commit
+it was made at. Verify it from a clone — no private key is needed, and none is in here:
+
+```bash
+node tools/technocore-did.mjs verify bind "$(node -p 'require("./DID.json").nonce')" "$(node -p 'require("./DID.json").signature')" $(node -p 'require("./DID.json").statement')
+```
+
+Be exact about what that proves. A `did:key` signature proves **possession of a key** — not
+identity, not honesty, not authorship. The Technocore DID note proves less still. It is
+world-writable: signed writes exist for `room-owners` and `room-allow` and, in the service's own
+words, "nowhere else", and the note's path is derived from the DID by a published rule, so anyone
+holding a DID can compute where its note lives and write over it. Nor does it last —
+*"Rooms and notes with no write for 7 days are deleted."*
+
+What carries weight is the pair. The commit is timestamped and belongs to an account; the
+signature inside it names the repository and that commit. Forging the pair after the fact means
+rewriting a public git history. Neither half is evidence alone, and the durable half is this one.
+
 ## Provenance and caveat
 
 The yellow paper states its own precedence rule and this repository follows it: *"Concrete figures
