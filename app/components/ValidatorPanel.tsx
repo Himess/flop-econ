@@ -253,6 +253,7 @@ export function ValidatorPanel({
           id="v-stake"
           label="Self-stake"
           suffix="FLOP"
+          grouped
           value={s.stake === undefined ? "" : String(s.stake)}
           onChange={(v) => set({ stake: v === "" ? undefined : Number(v) })}
         />
@@ -260,6 +261,7 @@ export function ValidatorPanel({
           id="v-avg"
           label="Average stake"
           suffix="FLOP each"
+          grouped
           value={avgText}
           onChange={(v) => set({ networkStake: v === "" ? undefined : Number(v) * s.setSize })}
         />

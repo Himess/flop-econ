@@ -67,6 +67,7 @@ export function AgentPanel({
           id="a-esc"
           label="Escrow reserved"
           suffix="FLOP"
+          grouped
           value={s.escrow === undefined ? "" : String(s.escrow)}
           onChange={(v) => set({ escrow: v === "" ? undefined : Number(v) })}
         />
