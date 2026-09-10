@@ -265,6 +265,40 @@ export function Inputs({ children, bare }: { children: React.ReactNode; bare?: b
 }
 
 /**
+ * A labelled band of inputs.
+ *
+ * The three groups are the whole point of the input rebuild: what you ARE (position), what you
+ * OWN (hardware), and what you are GUESSING (estimates). Without the labels a reader cannot tell
+ * which fields the assumptions chip is counting, and the count stops meaning anything.
+ */
+export function Group({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  /** One clause. Not a sentence about methodology. */
+  note?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-5">
+      <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        <span className="text-[11.5px] uppercase tracking-[.06em]" style={{ color: "var(--ink-2)" }}>
+          {title}
+        </span>
+        {note ? (
+          <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            {note}
+          </span>
+        ) : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/**
  * A titled surface. The chart earns one because a plot floating on the page ground has no edge,
  * and an edge is most of what makes a figure read as considered rather than pasted in.
  */

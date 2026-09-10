@@ -25,8 +25,6 @@ export interface Scenario {
   setSize: number;
   era: number;
   seatRate: number | undefined;
-  daCost: number | undefined;
-  gpuCost: number | undefined;
   verdicts: number | undefined;
   settlePerTurn: number | undefined;
   liquidity: "locked_autocompound" | "liquid";
@@ -42,10 +40,19 @@ export interface Scenario {
   pricePerToken: number | undefined;
   anchorYear: number;
   electricityPrice: number | undefined;
-  powerKw: number | undefined;
+  // The rig, as physical facts. `powerKw` was a single field that asked the user to do this
+  // multiplication in their head; now the tool shows the arithmetic.
+  gpuCount: number | undefined;
+  wattsPerGpu: number | undefined;
+  utilisation: number | undefined;
   hardwareUsd: number | undefined;
   amortMonths: number | undefined;
   hostingUsdMonth: number | undefined;
+  // network traffic — the estimates the DA duty is derived from
+  sessionsPerDay: number | undefined;
+  turnsPerSession: number | undefined;
+  tokensPerTurn: number | undefined;
+  storageUsdGbMonth: number | undefined;
   // timeline
   horizonMonths: number;
   bondLockMonths: number | undefined;
@@ -75,8 +82,6 @@ export const EXAMPLE: Scenario = {
   setSize: WIRED_SET,
   era: 0,
   seatRate: undefined, // blank = derived from stake, which is the honest default
-  daCost: 250_000,
-  gpuCost: 900_000,
   verdicts: 5_000,
   settlePerTurn: 3.1,
   liquidity: "locked_autocompound",
@@ -95,10 +100,19 @@ export const EXAMPLE: Scenario = {
   pricePerToken: undefined,
   anchorYear: 1,
   electricityPrice: 0.09,
-  powerKw: 1.5,
+  gpuCount: 2,
+  wattsPerGpu: 700,
+  utilisation: 0.5,
   hardwareUsd: 30_000,
   amortMonths: 36,
   hostingUsdMonth: 400,
+  // Illustrative network traffic. These are the only genuine estimates left on the validator tab
+  // besides the valuation: the byte arithmetic behind the DA duty is all normative (App. F.3,
+  // §3.4, §5.3), so what remains unknown is how much traffic there is and how it is shaped.
+  sessionsPerDay: 5_000,
+  turnsPerSession: 20,
+  tokensPerTurn: 800,
+  storageUsdGbMonth: 0.02,
   // 36 months so a two-year lock sits inside the default view. Bond lock and exit are left
   // blank deliberately: neither is a spec rule, and blank models "you keep validating".
   horizonMonths: 36,
@@ -106,20 +120,37 @@ export const EXAMPLE: Scenario = {
   exitAtMonth: undefined,
 };
 
-/** Every field that stands in for an ABSENT parameter, so the UI can badge them consistently. */
-export const ASSUMED_FIELDS = [
-  "daCost",
-  "gpuCost",
+/**
+ * Fields that stand in for something the specification does not define, split by what kind of
+ * claim they are.
+ *
+ * ESTIMATES are guesses about a network that does not exist. They carry the dotted mark and the
+ * assumptions chip counts them, because they are the short list that deserves scrutiny.
+ *
+ * PHYSICAL fields are facts about the operator's own setup. They are not spec figures either — a
+ * result resting on them is still ABSENT — but a validator KNOWS how many cards they own, so
+ * counting them alongside the guesses made the chip's number mean nothing.
+ */
+export const ESTIMATE_FIELDS = [
+  "sessionsPerDay",
+  "turnsPerSession",
+  "tokensPerTurn",
   "settlePerTurn",
   "unitToFlop",
   "valuationUsd",
   "pricePerToken",
+  "bondLockMonths",
+] as const satisfies readonly (keyof Scenario)[];
+
+export const PHYSICAL_FIELDS = [
   "electricityPrice",
-  "powerKw",
+  "gpuCount",
+  "wattsPerGpu",
+  "utilisation",
   "hardwareUsd",
   "amortMonths",
   "hostingUsdMonth",
-  "bondLockMonths",
+  "storageUsdGbMonth",
 ] as const satisfies readonly (keyof Scenario)[];
 
 const KEYS: Record<keyof Scenario, string> = {
@@ -128,8 +159,6 @@ const KEYS: Record<keyof Scenario, string> = {
   setSize: "set",
   era: "era",
   seatRate: "sr",
-  daCost: "da",
-  gpuCost: "gpu",
   verdicts: "av",
   settlePerTurn: "spt",
   liquidity: "liq",
@@ -143,10 +172,16 @@ const KEYS: Record<keyof Scenario, string> = {
   pricePerToken: "ppt",
   anchorYear: "ay",
   electricityPrice: "ep",
-  powerKw: "kw",
+  gpuCount: "gn",
+  wattsPerGpu: "gw",
+  utilisation: "gu",
   hardwareUsd: "hw",
   amortMonths: "am",
   hostingUsdMonth: "ho",
+  sessionsPerDay: "spd",
+  turnsPerSession: "tps",
+  tokensPerTurn: "tpt",
+  storageUsdGbMonth: "sgb",
   horizonMonths: "hm",
   bondLockMonths: "bl",
   exitAtMonth: "ex",
@@ -228,8 +263,6 @@ export function cleared(): Scenario {
     setSize: WIRED_SET,
     era: 0,
     seatRate: undefined,
-    daCost: undefined,
-    gpuCost: undefined,
     verdicts: undefined,
     settlePerTurn: undefined,
     liquidity: "locked_autocompound",
@@ -243,10 +276,16 @@ export function cleared(): Scenario {
     pricePerToken: undefined,
     anchorYear: 1,
     electricityPrice: undefined,
-    powerKw: undefined,
+    gpuCount: undefined,
+    wattsPerGpu: undefined,
+    utilisation: undefined,
     hardwareUsd: undefined,
     amortMonths: undefined,
     hostingUsdMonth: undefined,
+    sessionsPerDay: undefined,
+    turnsPerSession: undefined,
+    tokensPerTurn: undefined,
+    storageUsdGbMonth: undefined,
     horizonMonths: 36,
     bondLockMonths: undefined,
     exitAtMonth: undefined,

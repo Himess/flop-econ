@@ -38,6 +38,8 @@ export const ANCHORS = {
   overReservation: "calc-over-reservation",
   reservations: "calc-reservations",
   dispute: "calc-dispute",
+  daBytes: "calc-da-bytes",
+  committeeGate: "calc-committee-gate",
   // reference sections
   params: "parameters",
   disagreements: "disagreements",
@@ -243,6 +245,30 @@ export const CALCS: readonly CalcEntry[] = [
     cites: "R12.2 · Appendix A",
   },
   {
+    id: ANCHORS.daBytes,
+    title: "The DA storage duty, in bytes",
+    role: "validator",
+    formula: `L        = ceil(log2(turns))
+perTurn  = 268 + compact_len(L) + 33 x L                 [App. F.3]
+toploc   = ceil(tokensPerTurn / 32) x 258                [§3.4]
+session  = turns x (perTurn + toploc)
+stored   = session x sessionsPerDay x 14 d x 2           [§5.3 rate 1/2, 14 d retention]
+yours    = stored x (your stake / network stake)         [App. F.4 stake-weighted subset]`,
+    body: "Every constant here is normative, which is what makes the duty derivable instead of guessable — the tool used to ask for a DA cost in FLOP per year, and nobody can answer that. The R=6 subset size is never stated in the specification and does not need to be: the shards on a subset sum to expansion x original by construction, so the subset size cancels and a stake-weighted assignment leaves a validator with an expected share equal to its stake share. What is NOT derived: egress. E.47 leaves audit and repair timing open and §15.3 quantifies the duty only as \"GB-scale bandwidth\", so bandwidth is left out of the model rather than approximated, and a validator sizing costs from the storage figure alone will understate the leg. The direct PoUI rail's blobs are out too — \"TEE quote (5-10 KB), event log (<= 256 KB)\" is a range, a ceiling and one unstated term.",
+    cites: "App. F.3 · App. F.4 · §3.4 R3.4a · §5.3 R5.3a/R5.3d · Appendix A (da_ephemeral_retention_blocks, da_shard_count) · E.47 · E.46",
+  },
+  {
+    id: ANCHORS.committeeGate,
+    title: "What the committee gate actually requires of a GPU",
+    role: "validator",
+    formula: `gate     : LastVerifiedWork within 86,400 blocks (24 h)   [§15.2, R15.4a]
+renewal  : >= 8 fresh jobs whose aggregate verified work
+           >= C_effective x elapsed x 500,000 / 10^6      [R7.2]
+           elapsed <= 600 blocks (10 min), lease 7 d`,
+    body: "The gate is a recency test on a timestamp, not a quantity test: one verified proof inside the 24-hour window keeps the seat, and no minimum G_n or utilisation appears in it. The only quantity floor in the system is in the calibration-cap renewal rule, and it is stated relative to the operator's OWN effective capacity — so the specification sets no absolute hardware minimum, and a small card with a small cap clears the same rule as a large one. §15.3 gives qualitative intensities only. This is why the tool asks for cards, draw and utilisation and derives a cost, instead of asking what a GPU backend costs per year: the protocol fixes the shape of the duty and the operator fixes its size.",
+    cites: "§15.2 · §15.3 · R2.4 · R15.4a · R7.2 · R15.5 · Appendix A (work_recency_window_blocks_gate, calibration_min_utilization_ppm, calibration_lease_blocks) · E.42",
+  },
+  {
     id: ANCHORS.dispute,
     title: "Disputes",
     role: "agent",
@@ -264,6 +290,32 @@ export interface Finding {
 }
 
 export const FINDINGS: readonly Finding[] = [
+  {
+    id: "f-da-storage",
+    title: "The DA storage duty is a rounding error, and the spec calls it a heavy leg",
+    claim:
+      "§15.3 names DA store-and-serve one of \"the two heavy legs\". Derive it from the spec's own byte rules and one validator holds single-digit gigabytes even at a million sessions a day — a few dollars a year. Whatever is heavy about that leg, it is not the storage.",
+    body: [
+      "The arithmetic is entirely normative. A VerifiedTurn is \"268 + compact_len(L) + 33L B\" for Merkle path length L (App. F.3). Every session must carry a TOPLOC activation commitment, \"polynomial-encoded to ~258 bytes / 32 tokens\" (§3.4, R3.4a). Ephemeral blobs are retained for da_ephemeral_retention_blocks — 14 days. Bytes are erasure-coded at Reed-Solomon rate ½ onto a stake-weighted subset (§5.3 R5.3a).",
+      "The subset size is never stated, and it does not need to be: whatever the subset is, the shards on it sum to expansion × original by construction, and a stake-weighted draw gives a validator an expected share equal to its stake share. So expected bytes held = original × 2 × (your stake ÷ network stake). At the set average that is 2 × original ÷ set size.",
+      "Put a busy network through it — 20 turns of 800 tokens, a million sessions a day, a 200-validator set — and the standing duty is tens of gigabytes. At ordinary object-storage prices that is single-digit dollars a year, against a stake floor of 305,505 FLOP. The tool's own previous example asked the user to type 250,000 FLOP/yr for this line.",
+      "The heavy part is bandwidth, and that is exactly what cannot be derived: E.47 leaves \"audit/repair timing, repair bandwidth\" open, and §15.3 quantifies the duty only as \"GB-scale bandwidth\". So the tool derives the storage and says plainly that egress is out of the model — a validator sizing their costs from the storage figure alone will understate the leg, and there is no honest way to close it from the specification as written.",
+    ],
+    cites: "App. F.3 · §3.4 R3.4a · §5.3 R5.3a · R5.3d · §15.3 · Appendix A (da_ephemeral_retention_blocks) · E.47",
+  },
+  {
+    id: "f-committee-gate",
+    title: "The committee GPU gate has no quantity, and the only floor is relative to yourself",
+    claim:
+      "Everyone planning to validate is asking how big a GPU they need. The specification never says, and not by omission: the gate is a recency test on a timestamp, and the one quantity floor in the system is stated as a fraction of the operator's own capacity.",
+    body: [
+      "R2.4 and R15.4a restrict finality-committee membership to validators meeting the stake minimum and is_work_verified_recent. §15.2's table gives that predicate exactly: \"LastVerifiedWork within WorkRecencyWindow = 86,400 blk (24 h); else active but out of the PoUI committee.\" One verified proof inside the window satisfies it. No minimum G_n, job count or utilisation appears in the gate.",
+      "The quantity lives one layer down, in the calibration-cap renewal rule. R7.2: renewal needs at least calibration_renewal_min_verified_jobs = 8 fresh one-shot jobs whose \"aggregate verified work MUST cover C_effective × max(1, current_block − renewal_trigger) × calibration_min_utilization_ppm / 10^6\" — 50%. The trigger cannot be older than calibration_renewal_max_age_blocks = 600 blocks, so the 50% applies over at most ten minutes, once per seven-day lease.",
+      "C_effective is the operator's OWN benchmarked capacity. A small card with a small cap clears the same rule as a large one. There is therefore no absolute hardware minimum anywhere in the specification — §15.3 gives qualitative intensities only (\"light CPU\", \"GB-scale bandwidth\", \"GPU-heavy\"), and any CPU/RAM/NVMe figure circulating is community reporting.",
+      "The spec is candid about the consequence. R15.5 ranks validators by stake \"subject to a minimum-performance floor (verified-work + liveness), so wash verified-work does not improve rank (only clearing the floor remains gameable)\" — clearing the floor is acknowledged as gameable. That is why this tool asks for cards, draw and utilisation and derives a cost, rather than asking what a GPU backend costs per year: the protocol sets the shape of the duty, and the operator sets its size.",
+    ],
+    cites: "R2.4 · R15.4a · §15.2 · §15.3 · R7.2 · R15.5 · Appendix A (work_recency_window, calibration_*) · E.42",
+  },
   {
     id: "f-committee-premium",
     title: "The finality-committee premium is worth nothing to an average validator",

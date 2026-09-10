@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:fdc029a1a6dda2a4)
+// Source: params.yaml (sha256:b726d199bf24afe5)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -29,7 +29,7 @@ export interface Disagreement {
   readonly handling: string;
 }
 
-export const PARAMS_SHA256 = "fdc029a1a6dda2a4";
+export const PARAMS_SHA256 = "b726d199bf24afe5";
 
 export const META = {
   "spec_source": "https://flop.finance/intro/yellowpaper/",
@@ -502,6 +502,122 @@ export const PARAMS: readonly Param[] = [
     "cite": "Appendix A; §5.3; R5.3a; D-0402"
   },
   {
+    "key": "da_erasure_expansion_ratio",
+    "value": 2,
+    "unit": "ratio",
+    "bucket": "DEFINED",
+    "cite": "§5.3 R5.3a; Appendix F.4 (Reed-Solomon rate 1/2)",
+    "note": "Rate 1/2 means the stored bytes are twice the original. R=6 shards of orig/3 each; any k=3 reconstruct. The subset SIZE is never stated, but it cancels: subset x shard = 2 x original by construction, so expected per-validator bytes do not depend on it."
+  },
+  {
+    "key": "toploc_commitment_bytes",
+    "value": 258,
+    "unit": "bytes",
+    "bucket": "DEFINED",
+    "cite": "§3.4",
+    "note": "\"TOPLOC commits the top-128 values+indices of each token's last hidden state, polynomial-encoded to ~258 bytes / 32 tokens.\" Stated with a tilde - it is a size for a scheme, not a protocol constant, so a derivation from it is approximate and says so. R3.4a makes the commitment mandatory for every session and requires publication to DA."
+  },
+  {
+    "key": "toploc_commitment_token_window",
+    "value": 32,
+    "unit": "tokens",
+    "bucket": "DEFINED",
+    "cite": "§3.4",
+    "note": "The window the 258 bytes covers."
+  },
+  {
+    "key": "verified_turn_bytes_base",
+    "value": 268,
+    "unit": "bytes",
+    "bucket": "DEFINED",
+    "cite": "Appendix F.3 (VerifiedTurn)",
+    "note": "\"SCALE size 268 + compact_len(L) + 33L B for path length L\". The fixed part; the V3 leaf preimage itself is 236 B."
+  },
+  {
+    "key": "verified_turn_merkle_item_bytes",
+    "value": 33,
+    "unit": "bytes",
+    "bucket": "DEFINED",
+    "cite": "Appendix F.3",
+    "note": "Each Merkle path item is (sibling_hash:H256, sibling_is_left:bool) = 32 + 1 B."
+  },
+  {
+    "key": "work_recency_window_blocks_gate",
+    "value": 86400,
+    "unit": "blocks",
+    "bucket": "DEFINED",
+    "cite": "§15.2 table; R2.4; R15.4a (is_work_verified_recent)",
+    "note": "\"LastVerifiedWork within WorkRecencyWindow = 86,400 blk (24 h); else active but out of the PoUI committee.\" A RECENCY test on a timestamp, not a quantity test: one verified proof inside the window satisfies it. No minimum G_n, job count or utilisation appears in the gate itself."
+  },
+  {
+    "key": "calibration_min_utilization_ppm",
+    "value": 500000,
+    "unit": "ppm",
+    "bucket": "DEFINED",
+    "cite": "Appendix A; §6.1; R7.2",
+    "note": "50%. The real quantity floor, and it is in the calibration-cap renewal rule rather than the committee gate: renewal work MUST cover C_effective x max(1, current_block - renewal_trigger) x this / 10^6. Relative to your OWN effective capacity, so it sets no absolute hardware minimum."
+  },
+  {
+    "key": "calibration_lease_blocks",
+    "value": 604800,
+    "unit": "blocks",
+    "bucket": "DEFINED",
+    "cite": "Appendix A; §6.1; R7.2; D-0433",
+    "note": "7 days. At the exact expiry boundary every PoUI and compute-channel consumer fails closed."
+  },
+  {
+    "key": "calibration_renewal_min_verified_jobs",
+    "value": 8,
+    "unit": "jobs",
+    "bucket": "DEFINED",
+    "cite": "Appendix A; §6.1; R7.2; D-0433",
+    "note": "Minimum fresh one-shot Ghost canaries per renewal. Job count alone MUST NOT renew a cap."
+  },
+  {
+    "key": "calibration_renewal_max_age_blocks",
+    "value": 600,
+    "unit": "blocks",
+    "bucket": "DEFINED",
+    "cite": "Appendix A; §6.1; R7.2",
+    "note": "10 minutes. Bounds the renewal window, so the 50% floor applies over at most 600 blocks - a burst, not a sustained duty."
+  },
+  {
+    "key": "network_sessions_per_day",
+    "bucket": "ABSENT",
+    "cite": "E.49 — independent-demand and value-at-risk model [TBD]; tracking #735",
+    "note": "The single genuine unknown behind the DA duty. The spec has no demand model: E.49 is open and §12.3's throughput figures are explicitly \"not a measured network capacity\" (48/64 lifecycles/s \"assumes exactly two inclusions ... and is not a measured network capacity\")."
+  },
+  {
+    "key": "network_turns_per_session",
+    "bucket": "ABSENT",
+    "cite": "no normative source; bounded above by channel_max_settlement_turns",
+    "note": "Traffic shape, not a protocol figure. The spec bounds a settlement bundle (channel_max_settlement_turns) but says nothing about typical session length."
+  },
+  {
+    "key": "network_tokens_per_turn",
+    "bucket": "ABSENT",
+    "cite": "no normative source",
+    "note": "Drives the TOPLOC commitment volume at 258 B per 32 tokens. Pricing is quoted in tokens (§4) but no typical turn length is stated anywhere."
+  },
+  {
+    "key": "da_storage_price_usd_gb_month",
+    "bucket": "ABSENT",
+    "cite": "outside the protocol - the operator's own hosting contract",
+    "note": "Not a spec figure and never will be. R5.3c/§15.3: the duty is \"funded by reward share, no per-byte fee\", so what a validator pays for storage is a fact about their provider."
+  },
+  {
+    "key": "da_bandwidth_volume",
+    "bucket": "ABSENT",
+    "cite": "E.47 — DA availability and anti-grinding model [TBD]; tracking #1497",
+    "note": "NOT derivable, and deliberately left out of the model rather than approximated. E.47 leaves \"audit/repair timing, repair bandwidth\" open, and §15.3 quantifies the duty only as \"GB-scale bandwidth\". Storage is derivable; the egress that goes with it is not."
+  },
+  {
+    "key": "da_direct_rail_blob_bytes",
+    "bucket": "ABSENT",
+    "cite": "§5.2 (5-10 KB quote, event log <= 256 KB); E.46 [TBD]; tracking #1496",
+    "note": "The direct PoUI rail's DA payload is \"proof_data, TEE quote (5-10 KB), event log (<= 256 KB)\" - a range, a ceiling, and one unstated term. E.46 calls its byte figures \"arithmetic byte ceilings only\". Modelling it would mean picking a number inside a 50x band, so the derivation covers the session-transcript path only and says so."
+  },
+  {
     "key": "da_endpoint_deposit",
     "value": 1,
     "unit": "FLOP",
@@ -850,7 +966,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
   }
 ];
 
-export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_unbonding_slash_lock" | "validator_bond_lock_months" | "network_stake_growth_rate" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_backend_cost" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
+export type ParamKey = "initial_block_reward" | "halving_interval_blocks" | "max_halvings" | "floor_reward" | "block_time_seconds" | "blocks_per_year" | "miner_share_ppt" | "validator_share_ppt" | "agent_share_ppt" | "staker_share_ppt" | "finality_committee_premium_weight_ppm" | "subsidy_per_block_per_recipient" | "genesis_supply" | "genesis_validator_airdrop" | "validator_min_stake" | "validator_growth_numerator" | "validator_growth_denominator" | "validator_value_coupled_floor_k" | "validator_self_stake_ratio_min_percent" | "validator_max_slots_per_entity" | "validator_min_delegation" | "validator_active_set_cap" | "validator_active_set_wired" | "finality_committee_size" | "committee_seat_inclusion_probability" | "validator_rotation_interval_blocks" | "validators_to_eject" | "validators_to_promote" | "ejection_cooldown_blocks" | "validator_unbonding_blocks" | "work_recency_window_blocks" | "validator_rotation_rank_key" | "performance_score_weights" | "validator_queue_stake_lock" | "validator_unbonding_slash_lock" | "validator_bond_lock_months" | "network_stake_growth_rate" | "validator_reward_liquidity" | "audit_fee_split_ppm" | "audit_fee_per_turn" | "sampled_audit_alpha_ppm" | "sampled_audit_checkpoint_turns" | "audit_quantum_gn" | "high_value_gn_threshold" | "slash_liveness_percent" | "slash_extended_downtime_percent" | "slash_equivocation_lone_percent" | "equivocation_return_days" | "slash_fraud_percent" | "da_serve_or_slash_percent" | "slash_loss_order" | "slash_proceeds_destination" | "validator_implied_annual_cost_flop" | "validator_da_volume_bytes" | "validator_gpu_backend_cost" | "validator_hardware_spec" | "da_ephemeral_retention_blocks" | "da_shard_count" | "da_min_replication_factor" | "da_erasure_expansion_ratio" | "toploc_commitment_bytes" | "toploc_commitment_token_window" | "verified_turn_bytes_base" | "verified_turn_merkle_item_bytes" | "work_recency_window_blocks_gate" | "calibration_min_utilization_ppm" | "calibration_lease_blocks" | "calibration_renewal_min_verified_jobs" | "calibration_renewal_max_age_blocks" | "network_sessions_per_day" | "network_turns_per_session" | "network_tokens_per_turn" | "da_storage_price_usd_gb_month" | "da_bandwidth_volume" | "da_direct_rail_blob_bytes" | "da_endpoint_deposit" | "da_lease_deposit_per_byte" | "refund_penalty_phi_percent" | "channel_base_per_turn" | "channel_c_turn_fixed" | "channel_rate_g_per_gn" | "channel_unit_to_flop" | "escrow_sizing_formula" | "session_price" | "channel_challenger_bond" | "challenger_bond_on_failed_dispute" | "max_active_reservations_base" | "escrow_per_reservation_slot" | "channel_max_settlement_turns" | "channel_max_merkle_path_len" | "channel_dispute_window_blocks" | "channel_dispute_response_window_blocks" | "channel_ack_window_blocks" | "min_force_open_escrow_for_failed_ack" | "min_certificate_premium_ppm" | "settlement_class_enumeration" | "sla_breach_rebate" | "agent_identity_min_stake" | "agent_per_tx_limit" | "agent_daily_cap_autonomous" | "circuit_breaker_tx_count" | "circuit_breaker_flop_cap" | "circuit_breaker_window_blocks" | "session_key_max_duration_blocks" | "agent_reward_distribution" | "agent_testnet_conversion" | "min_miner_self_stake" | "miner_capacity_stake_per_gflop" | "miner_stake_surge_multiplier_ppm" | "soft_tier_spot_check_rate_ppm" | "miner_unbonding_blocks" | "miner_reward_apportionment" | "soft_tier_settlement_path" | "tee_tier_value_cap_premium" | "aggregate_reservation_model";
 
 const BY_KEY = new Map<string, Param>(PARAMS.map((p) => [p.key, p]));
 

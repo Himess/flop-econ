@@ -191,8 +191,8 @@ describe("the docs page carries the depth", () => {
     }
   });
 
-  it("carries all four findings, each with a claim and a body", () => {
-    expect(FINDINGS).toHaveLength(4);
+  it("carries every finding, each with a claim and a body", () => {
+    expect(FINDINGS).toHaveLength(6);
     for (const f of FINDINGS) {
       expect(f.claim.length, f.id).toBeGreaterThan(60);
       expect(f.body.length, f.id).toBeGreaterThanOrEqual(3);
@@ -206,6 +206,9 @@ describe("the docs page carries the depth", () => {
     expect(ids).toContain("f-audit-floor");
     expect(ids).toContain("f-lock-payback");
     expect(ids).toContain("f-gpu-backend");
+    // From the input rebuild: what the spec's own byte rules and its committee gate actually say.
+    expect(ids).toContain("f-da-storage");
+    expect(ids).toContain("f-committee-gate");
   });
 
   it("lists the limits, including the ones that were cut deliberately", () => {

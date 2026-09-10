@@ -97,9 +97,9 @@ export default function DocsPage() {
       {/* ------------------------------------------------------------------ findings */}
       <H2 id={ANCHORS.findings}>Findings</H2>
       <p className="mt-3 max-w-[70ch] text-[14px]" style={{ color: "var(--ink-2)" }}>
-        Four things this work established that are not stated in the specification or on FLOP&rsquo;s
-        published pages. Each is checkable against the citations given; each is pinned by a test in
-        the repository.
+        {FINDINGS.length} things this work established that are not stated in the specification or
+        on FLOP&rsquo;s published pages. Each is checkable against the citations given; each is
+        pinned by a test in the repository.
       </p>
       {FINDINGS.map((f, i) => (
         <article key={f.id} id={f.id} className="mt-10 scroll-mt-6">

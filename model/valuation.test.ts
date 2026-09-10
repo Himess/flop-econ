@@ -28,6 +28,9 @@ const COSTS: CostInputs = {
   hardwareUsd: 30_000,
   amortMonths: 36,
   hostingUsdMonth: 400,
+  // Derived by physical.daStorageUsdYear in the app; a literal here keeps this file testing the
+  // cost sum rather than the DA derivation, which has its own suite.
+  daStorageUsdYear: 24,
 };
 const VAL: ValuationInputs = { mode: "valuation", valuationUsd: 300_000_000, anchorYear: 1 };
 const REV_FLOP = 1_800_000; // FLOP/yr, as the validator model would supply it
@@ -114,7 +117,7 @@ describe("costs", () => {
     const c = annualCostUsd({});
     expect(isBlocked(c)).toBe(true);
     if (!isBlocked(c)) return;
-    expect(c.missing).toHaveLength(5);
+    expect(c.missing).toHaveLength(6);
     expect(c.message).toMatch(/^Enter /);
   });
 
@@ -124,15 +127,26 @@ describe("costs", () => {
     if (isBlocked(c)) expect(c.missing).toEqual(["hosting_usd_month"]);
   });
 
-  it("sums energy, amortisation and hosting", () => {
+  it("sums energy, amortisation, hosting and DA storage", () => {
     const c = annualCostUsd(COSTS);
     if (isBlocked(c)) throw new Error("unexpected block");
     const energy = 0.09 * 1.5 * 24 * 365;
     const amort = (30_000 / 36) * 12;
     const hosting = 400 * 12;
-    expect(c.value).toBeCloseTo(energy + amort + hosting, 6);
+    expect(c.value).toBeCloseTo(energy + amort + hosting + 24, 6);
     expect(c.bucket).toBe("ABSENT");
     expect(c.assumptions).toHaveLength(5);
+  });
+
+  /**
+   * DA store-and-serve is one of the two heavy legs (§15.3), so the USD cost model cannot leave
+   * it out. It is required rather than optional-with-zero for the same reason the FLOP version
+   * blocked: a silent zero is an invented figure.
+   */
+  it("blocks without DA storage rather than treating it as zero", () => {
+    const c = annualCostUsd({ ...COSTS, daStorageUsdYear: undefined });
+    expect(isBlocked(c)).toBe(true);
+    if (isBlocked(c)) expect(c.missing).toEqual(["da_storage_usd_year"]);
   });
 
   it("refuses a zero amortisation period rather than dividing by it", () => {

@@ -114,6 +114,7 @@ function priceAssumption(label: string, value: number, unit: string): Assumption
     unit,
     cite: "your assumption — the specification has no view on price or valuation",
     label: label === "valuation" ? "network valuation" : "token price",
+    kind: "estimate",
   };
 }
 
@@ -197,6 +198,14 @@ export interface CostInputs {
   amortMonths?: number;
   /** Hosting or colocation, USD per month. */
   hostingUsdMonth?: number;
+  /**
+   * DA storage, USD per year — derived from network traffic by `physical.daStorageUsdYear`.
+   *
+   * Required, not optional-with-zero. §15.3 names DA store-and-serve one of "the two heavy legs";
+   * a USD cost model that silently omits it is wrong the same way the FLOP-denominated version
+   * was. Egress is deliberately NOT in here: E.47 leaves repair bandwidth and audit timing open.
+   */
+  daStorageUsdYear?: number;
 }
 
 const HOURS_PER_YEAR = 24 * 365;
@@ -217,6 +226,7 @@ export function annualCostUsd(c: CostInputs): Computed {
   const hw = need(c.hardwareUsd, "hardware_cost_usd", "hardware cost");
   const months = need(c.amortMonths, "amortisation_months", "amortisation period");
   const hosting = need(c.hostingUsdMonth, "hosting_usd_month", "hosting cost");
+  const daStorage = need(c.daStorageUsdYear, "da_storage_usd_year", "DA storage cost");
   if (missing.length > 0) return blocked(missing);
   if (months <= 0) {
     return blocked([
@@ -233,22 +243,23 @@ export function annualCostUsd(c: CostInputs): Computed {
   const host = hosting * MONTHS_PER_YEAR;
 
   const assumptions: AssumptionRef[] = [
-    { key: "electricity_price_usd_kwh", value: price, unit: "USD/kWh", cite: "your assumption", label: "electricity price" },
-    { key: "power_draw_kw", value: kw, unit: "kW", cite: "your assumption", label: "power draw" },
-    { key: "hardware_cost_usd", value: hw, unit: "USD", cite: "your assumption", label: "hardware cost" },
-    { key: "amortisation_months", value: months, unit: "months", cite: "your assumption", label: "amortisation period" },
-    { key: "hosting_usd_month", value: hosting, unit: "USD/month", cite: "your assumption", label: "hosting cost" },
+    { key: "electricity_price_usd_kwh", value: price, unit: "USD/kWh", cite: "your tariff", label: "electricity price", kind: "physical" },
+    { key: "power_draw_kw", value: kw, unit: "kW", cite: "derived from your cards", label: "power draw", kind: "physical" },
+    { key: "hardware_cost_usd", value: hw, unit: "USD", cite: "what you paid", label: "hardware cost", kind: "physical" },
+    { key: "amortisation_months", value: months, unit: "months", cite: "your decision", label: "amortisation period", kind: "physical" },
+    { key: "hosting_usd_month", value: hosting, unit: "USD/month", cite: "your contract", label: "hosting cost", kind: "physical" },
   ];
 
   return figure({
-    value: energy + amort + host,
+    value: energy + amort + host + daStorage,
     unit: "USD/year",
     cites: [],
     assumptions,
     derivation:
       `energy ${Math.round(energy).toLocaleString("en-US")} (${kw} kW x ${HOURS_PER_YEAR.toLocaleString("en-US")} h x $${price}) ` +
       `+ amortisation ${Math.round(amort).toLocaleString("en-US")} ($${hw.toLocaleString("en-US")} over ${months} months) ` +
-      `+ hosting ${Math.round(host).toLocaleString("en-US")}`,
+      `+ hosting ${Math.round(host).toLocaleString("en-US")}` +
+      `+ DA storage ${Math.round(daStorage).toLocaleString("en-US")} (derived; egress excluded, E.47)`,
   });
 }
 

@@ -14,6 +14,16 @@ export type { Bucket, Param };
 
 /** An input the spec does not define, which the user supplied themselves. */
 export interface AssumptionRef {
+  /**
+   * Whether this is a guess about the world or a fact about the operator's own setup.
+   *
+   * Both drag a result to ABSENT — neither is a spec figure. But they are not the same claim: a
+   * validator KNOWS how many cards they own and what electricity costs them, and does not know
+   * how many sessions the network will carry. The assumptions chip counts only estimates, so the
+   * number it shows is one a reader can check against the short list that deserves scrutiny.
+   * Defaults to "estimate", the more cautious reading.
+   */
+  readonly kind?: "estimate" | "physical";
   /** The params.yaml key this stands in for, where one exists. */
   readonly key: string;
   /** What the user supplied. */

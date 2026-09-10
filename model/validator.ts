@@ -45,10 +45,26 @@ export interface ValidatorInputs {
    */
   committeeSeatProbability?: number;
 
-  /** ABSENT (E.47). Annual DA storage + bandwidth cost, FLOP. User must supply. */
+  /**
+   * Annual DA storage cost, FLOP. Derived, not typed: `physical.daStorageUsdYear` sizes the duty
+   * from network traffic and the operator's storage price, and the caller converts at the price
+   * the user's valuation implies. Nobody can answer this in FLOP directly.
+   */
   daCostPerYear?: number;
-  /** ABSENT (no spec sizing). Annual GPU-backend cost for the committee gate, FLOP. */
+  /**
+   * Annual cost of the committee-keeping rig, FLOP. Also derived — electricity, hardware
+   * amortisation and hosting, converted at the same price.
+   */
   gpuBackendCostPerYear?: number;
+  /**
+   * The leaf assumptions the two cost legs were derived FROM, when they were derived.
+   *
+   * Without this the ledger would show "DA storage and bandwidth cost: 250,000 FLOP/year" as a
+   * user assumption, which is no longer what the user supplied — they gave sessions per day,
+   * turns, tokens, a storage price and a rig. The result is still ABSENT; the ledger now names
+   * the figures the reader can actually check.
+   */
+  costAssumptionRefs?: readonly AssumptionRef[];
   /** Optional: any other operating cost the user wants to add, FLOP/yr. */
   otherCostPerYear?: number;
 
@@ -237,6 +253,9 @@ function costAssumptions(inp: ValidatorInputs): {
   const supplied: AssumptionRef[] = [];
   const missing: { key: string; cite: string; label: string }[] = [];
 
+  // A derived leg reports the figures behind it, not itself.
+  const passthrough = inp.costAssumptionRefs;
+
   const daP = param("validator_da_volume_bytes");
   if (inp.daCostPerYear === undefined) {
     missing.push({ key: daP.key, cite: daP.cite, label: "DA storage and bandwidth cost" });
@@ -263,7 +282,7 @@ function costAssumptions(inp: ValidatorInputs): {
     });
   }
 
-  return { supplied, missing };
+  return { supplied: passthrough ? [...passthrough] : supplied, missing };
 }
 
 /**

@@ -18,6 +18,33 @@ import {
 } from "./lib/state";
 
 const REPO = "https://github.com/Himess/flop-econ";
+
+/** The audit trail behind the chip: label, value, unit. Two lists, one shape. */
+function Ledger({ rows, muted }: { rows: AssumptionRef[]; muted?: boolean }) {
+  return (
+    <ul className="mt-2.5 grid gap-x-10 gap-y-0 sm:grid-cols-2">
+      {rows.map((a, i) => (
+        <li
+          key={`${a.key}-${i}`}
+          className="flex items-baseline justify-between gap-4 py-1.5 text-[12.5px]"
+          style={{ borderBottom: "1px solid var(--rule)" }}
+        >
+          <span style={{ color: muted ? "var(--ink-3)" : "var(--ink-2)" }}>{a.label}</span>
+          <span
+            className="whitespace-nowrap"
+            style={{
+              color: muted ? "var(--ink-2)" : "var(--ink)",
+              fontFamily: "var(--font-mono)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {a.value.toLocaleString("en-US")} <span style={{ color: "var(--ink-3)" }}>{a.unit}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 type Tab = "validator" | "agent";
 
 export default function Page() {
@@ -48,6 +75,11 @@ export default function Page() {
   }, []);
 
   const onAssumptions = useCallback((a: AssumptionRef[]) => setAssumptions(a), []);
+  // The chip counts guesses about the world, not facts about the operator's own setup. Both drag a
+  // result to ABSENT, but only the first list is short enough — and uncertain enough — to be worth
+  // a number in the masthead.
+  const estimates = assumptions.filter((a) => a.kind !== "physical");
+  const physical = assumptions.filter((a) => a.kind === "physical");
   const showingExample = source !== "url" && !touched.current && isExample(s);
 
   const copyLink = async () => {
@@ -150,13 +182,13 @@ export default function Page() {
           className="cursor-pointer rounded-full px-2.5 py-[3px] text-[11.5px] transition-colors"
           style={{
             background: "none",
-            border: `1px dotted ${assumptions.length ? "var(--absent)" : "var(--rule)"}`,
-            color: assumptions.length ? "var(--absent)" : "var(--ink-3)",
+            border: `1px dotted ${estimates.length ? "var(--absent)" : "var(--rule)"}`,
+            color: estimates.length ? "var(--absent)" : "var(--ink-3)",
             fontFamily: "var(--font-mono)",
           }}
-          title="Figures the specification does not define. Click to list them."
+          title="Estimates about a network that does not exist yet. Click to list them."
         >
-          {assumptions.length} assumed
+          {estimates.length} estimated
         </button>
 
         <div className="ml-auto flex items-center gap-2">
@@ -184,40 +216,27 @@ export default function Page() {
           style={{ background: "var(--panel)", border: "1px dotted var(--absent)" }}
         >
           <p className="text-[12.5px]" style={{ color: "var(--ink-2)" }}>
-            Figures the specification does not define, which you supplied.
+            Guesses about a network that does not exist yet.
           </p>
           <p className="mt-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-            Your stake, the set size and the average stake are your situation rather than
-            assumptions, so they are not counted here.
+            Your position and your hardware are not counted here — a validator knows their own
+            stake and their own cards.
           </p>
-          {assumptions.length === 0 ? (
+          {estimates.length === 0 ? (
             <p className="mt-2.5 text-[12px]" style={{ color: "var(--ink-3)" }}>
               None — a figure that needs one is blocked rather than defaulted.
             </p>
           ) : (
-            <ul className="mt-3 grid gap-x-10 gap-y-0 sm:grid-cols-2">
-              {assumptions.map((a, i) => (
-                <li
-                  key={`${a.key}-${i}`}
-                  className="flex items-baseline justify-between gap-4 py-1.5 text-[12.5px]"
-                  style={{ borderBottom: "1px solid var(--rule)" }}
-                >
-                  <span style={{ color: "var(--ink-2)" }}>{a.label}</span>
-                  <span
-                    className="whitespace-nowrap"
-                    style={{
-                      color: "var(--ink)",
-                      fontFamily: "var(--font-mono)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {a.value.toLocaleString("en-US")}{" "}
-                    <span style={{ color: "var(--ink-3)" }}>{a.unit}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <Ledger rows={estimates} />
           )}
+          {physical.length > 0 ? (
+            <>
+              <p className="mt-4 text-[11.5px] uppercase tracking-[.06em]" style={{ color: "var(--ink-3)" }}>
+                Derived from your own setup
+              </p>
+              <Ledger rows={physical} muted />
+            </>
+          ) : null}
           <p className="mt-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
             <a href={DOCS_PATH} className="underline decoration-dotted underline-offset-2">
               What each one affects

@@ -16,14 +16,24 @@ import {
   type ValidatorInputs,
 } from "@/model/validator";
 import { blockReward, rolePoolPerYear } from "@/model/emission";
-import { annualCostUsd, forward, GENESIS, reverse, tokenPrice } from "@/model/valuation";
+import { annualCostUsd, forward, GENESIS, reverse, tokenPrice, type CostInputs } from "@/model/valuation";
+import {
+  committeeGateDuty,
+  daBytesPerSession,
+  daStorageUsdYear,
+  HOURS_PER_YEAR,
+  rigPowerKw,
+  validatorDaGb,
+} from "@/model/physical";
+
+const MONTHS_PER_YEAR = 12;
 import { bothScenarios, liquiditySummary, payback } from "@/model/timeline";
 import { param } from "@/model/params.generated";
 import { isBlocked, num, type AssumptionRef } from "@/model/types";
 import { auto, dp2, int, pct } from "../lib/format";
 import { ANCHORS, href } from "../lib/docs";
 import { SET_SIZES, type Scenario } from "../lib/state";
-import { Answers, Block, Card, Drawer, Field, Headline, Inputs, Line, Mark, Select } from "./Marks";
+import { Answers, Block, Card, Drawer, Field, Group, Headline, Inputs, Line, Mark, Select } from "./Marks";
 import { Chart } from "./Chart";
 
 const MAX_HALVINGS = num(param("max_halvings"));
@@ -38,7 +48,42 @@ export function ValidatorPanel({
   set: (patch: Partial<Scenario>) => void;
   onAssumptions: (a: AssumptionRef[]) => void;
 }) {
-  const validator: ValidatorInputs = useMemo(
+  /**
+   * The derivation chain that replaced two unanswerable inputs.
+   *
+   * Nobody can say what their DA duty costs in FLOP per year, so the tool no longer asks. It asks
+   * for traffic and a storage price, derives the bytes from Appendix F.3 and §3.4, and converts at
+   * the price the user's own valuation implies. Same for the rig: cards, draw and utilisation give
+   * kW, kW and a tariff give dollars, dollars and a price give FLOP.
+   */
+  const traffic = useMemo(
+    () => ({
+      ...(s.sessionsPerDay === undefined ? {} : { sessionsPerDay: s.sessionsPerDay }),
+      ...(s.turnsPerSession === undefined ? {} : { turnsPerSession: s.turnsPerSession }),
+      ...(s.tokensPerTurn === undefined ? {} : { tokensPerTurn: s.tokensPerTurn }),
+    }),
+    [s.sessionsPerDay, s.turnsPerSession, s.tokensPerTurn],
+  );
+  const stakeShare = s.stake && s.networkStake ? s.stake / s.networkStake : 0;
+  const sessionBytes = useMemo(() => daBytesPerSession(traffic), [traffic]);
+  const daGb = useMemo(() => validatorDaGb(traffic, stakeShare), [traffic, stakeShare]);
+  const daUsd = useMemo(
+    () => daStorageUsdYear(traffic, stakeShare, s.storageUsdGbMonth),
+    [traffic, stakeShare, s.storageUsdGbMonth],
+  );
+  const powerKw = useMemo(
+    () =>
+      rigPowerKw({
+        ...(s.gpuCount === undefined ? {} : { gpuCount: s.gpuCount }),
+        ...(s.wattsPerGpu === undefined ? {} : { wattsPerGpu: s.wattsPerGpu }),
+        ...(s.utilisation === undefined ? {} : { utilisation: s.utilisation }),
+      }),
+    [s.gpuCount, s.wattsPerGpu, s.utilisation],
+  );
+  const gate = useMemo(() => committeeGateDuty(), []);
+
+  /** Everything except the cost legs, which are derived further down and folded back in. */
+  const validatorBase: ValidatorInputs = useMemo(
     () => ({
       stake: s.stake ?? 0,
       networkStake: s.networkStake ?? 0,
@@ -47,15 +92,16 @@ export function ValidatorPanel({
       ...(s.stake && s.networkStake
         ? { committeeSeatProbability: seatRateFromStake(s.stake, s.networkStake).value }
         : {}),
-      ...(s.daCost === undefined ? {} : { daCostPerYear: s.daCost }),
-      ...(s.gpuCost === undefined ? {} : { gpuBackendCostPerYear: s.gpuCost }),
       ...(s.verdicts === undefined ? {} : { auditVerdictsPerYear: s.verdicts }),
     }),
     [s],
   );
 
-  const be = useMemo(() => breakEven(validator), [validator]);
-  const revenueFlop = isBlocked(be.revenue) ? 0 : be.revenue.value;
+  // Revenue does not depend on cost, so it can be read before the cost chain closes.
+  const revenueFlop = useMemo(() => {
+    const r = breakEven(validatorBase).revenue;
+    return isBlocked(r) ? 0 : r.value;
+  }, [validatorBase]);
 
   const valuationInputs = useMemo(
     () => ({
@@ -66,19 +112,58 @@ export function ValidatorPanel({
     }),
     [s.priceMode, s.valuationUsd, s.pricePerToken, s.anchorYear],
   );
-  const costs = useMemo(
+  const costs: CostInputs = useMemo(
     () => ({
       electricityPrice: s.electricityPrice,
-      powerKw: s.powerKw,
+      ...(isBlocked(powerKw) ? {} : { powerKw: powerKw.value }),
       hardwareUsd: s.hardwareUsd,
       amortMonths: s.amortMonths,
       hostingUsdMonth: s.hostingUsdMonth,
+      ...(isBlocked(daUsd) ? {} : { daStorageUsdYear: daUsd.value }),
     }),
-    [s.electricityPrice, s.powerKw, s.hardwareUsd, s.amortMonths, s.hostingUsdMonth],
+    [s.electricityPrice, powerKw, s.hardwareUsd, s.amortMonths, s.hostingUsdMonth, daUsd],
   );
 
   const price = useMemo(() => tokenPrice(valuationInputs, "params"), [valuationInputs]);
   const usdCost = useMemo(() => annualCostUsd(costs), [costs]);
+
+  /**
+   * One cost model, in dollars, converted once.
+   *
+   * §15.3 names two heavy legs, so the model keeps two: DA storage, and the rig that keeps the
+   * committee seat (electricity + hardware amortisation + hosting). The rig figure is the total
+   * minus the DA component, which is exact because `annualCostUsd` adds them.
+   */
+  const costLegs = useMemo(() => {
+    if (isBlocked(usdCost) || isBlocked(daUsd) || isBlocked(price) || price.value <= 0) return null;
+    const refs: AssumptionRef[] = [
+      ...(isBlocked(powerKw) ? [] : powerKw.assumptions),
+      ...usdCost.assumptions.filter((a) => a.key !== "power_draw_kw"),
+      ...daUsd.assumptions,
+    ];
+    const seen = new Set<string>();
+    return {
+      daFlop: daUsd.value / price.value,
+      rigFlop: (usdCost.value - daUsd.value) / price.value,
+      refs: refs.filter((r) => (seen.has(r.key) ? false : (seen.add(r.key), true))),
+    };
+  }, [usdCost, daUsd, price, powerKw]);
+
+  const validator: ValidatorInputs = useMemo(
+    () => ({
+      ...validatorBase,
+      ...(costLegs === null
+        ? {}
+        : {
+            daCostPerYear: costLegs.daFlop,
+            gpuBackendCostPerYear: costLegs.rigFlop,
+            costAssumptionRefs: costLegs.refs,
+          }),
+    }),
+    [validatorBase, costLegs],
+  );
+
+  const be = useMemo(() => breakEven(validator), [validator]);
   const rev = useMemo(
     () => reverse(revenueFlop, costs, s.anchorYear, "params"),
     [revenueFlop, costs, s.anchorYear],
@@ -92,12 +177,26 @@ export function ValidatorPanel({
     [revenueFlop, valuationInputs, costs],
   );
 
+  /**
+   * Recurring monthly cash cost. Hardware is up-front in the timeline, so amortisation is
+   * deliberately absent here and DA storage is included — the same components as the annual
+   * figure, on the cash-flow clock rather than the accounting one.
+   */
   const monthlyCostUsd = useMemo(() => {
-    if (s.electricityPrice === undefined || s.powerKw === undefined || s.hostingUsdMonth === undefined) {
+    if (
+      s.electricityPrice === undefined ||
+      isBlocked(powerKw) ||
+      s.hostingUsdMonth === undefined ||
+      isBlocked(daUsd)
+    ) {
       return undefined;
     }
-    return (s.electricityPrice * s.powerKw * 24 * 365) / 12 + s.hostingUsdMonth;
-  }, [s.electricityPrice, s.powerKw, s.hostingUsdMonth]);
+    return (
+      (s.electricityPrice * powerKw.value * HOURS_PER_YEAR) / MONTHS_PER_YEAR +
+      s.hostingUsdMonth +
+      daUsd.value / MONTHS_PER_YEAR
+    );
+  }, [s.electricityPrice, powerKw, s.hostingUsdMonth, daUsd]);
 
   const timelineInputs = useMemo(
     () => ({
@@ -128,11 +227,21 @@ export function ValidatorPanel({
   );
 
   useEffect(() => {
+    // The ledger names the leaves the user actually typed, not the derived legs. Deduplicated by
+    // key, because power draw appears both as the rig's output and as the cost model's input.
+    const seen = new Set<string>();
     const a: AssumptionRef[] = [];
-    const c = operatingCost(validator);
-    if (!isBlocked(c)) a.push(...c.assumptions);
-    if (!isBlocked(price)) a.push(...price.assumptions);
-    if (!isBlocked(usdCost)) a.push(...usdCost.assumptions);
+    const add = (refs: readonly AssumptionRef[]) => {
+      for (const r of refs) {
+        if (r.key === "power_draw_kw" || seen.has(r.key)) continue;
+        seen.add(r.key);
+        a.push(r);
+      }
+    };
+    if (!isBlocked(powerKw)) add(powerKw.assumptions);
+    if (!isBlocked(price)) add(price.assumptions);
+    if (!isBlocked(usdCost)) add(usdCost.assumptions);
+    if (!isBlocked(daUsd)) add(daUsd.assumptions);
     onAssumptions(a);
   }, [validator, price, usdCost, onAssumptions]);
 
@@ -154,6 +263,7 @@ export function ValidatorPanel({
 
   return (
     <div>
+      <Group title="Your position" note="Facts and decisions, not estimates.">
       <Inputs>
         <Field
           id="v-stake"
@@ -184,47 +294,161 @@ export function ValidatorPanel({
             { value: String(SET_SIZES[1]), label: `${int(SET_SIZES[1])} ratified` },
           ]}
         />
-        <Field
-          id="v-da"
-          label="DA cost"
-          suffix="FLOP/yr"
-          assumed
-          value={s.daCost === undefined ? "" : String(s.daCost)}
-          onChange={(v) => set({ daCost: v === "" ? undefined : Number(v) })}
-        />
-        <Field
-          id="v-gpu"
-          label="GPU backend"
-          suffix="FLOP/yr"
-          assumed
-          value={s.gpuCost === undefined ? "" : String(s.gpuCost)}
-          onChange={(v) => set({ gpuCost: v === "" ? undefined : Number(v) })}
-        />
-        <Field
-          id="v-val"
-          label="Valuation"
-          suffix="USD"
-          assumed
-          value={s.valuationUsd === undefined ? "" : String(s.valuationUsd)}
-          onChange={(v) => set({ valuationUsd: v === "" ? undefined : Number(v) })}
-        />
-        <Field
-          id="v-hw"
-          label="Hardware"
-          suffix="USD"
-          assumed
-          value={s.hardwareUsd === undefined ? "" : String(s.hardwareUsd)}
-          onChange={(v) => set({ hardwareUsd: v === "" ? undefined : Number(v) })}
-        />
-        <Field
-          id="v-host"
-          label="Hosting"
-          suffix="USD/mo"
-          assumed
-          value={s.hostingUsdMonth === undefined ? "" : String(s.hostingUsdMonth)}
-          onChange={(v) => set({ hostingUsdMonth: v === "" ? undefined : Number(v) })}
-        />
       </Inputs>
+      </Group>
+
+      <Group title="Your hardware" note="Physical facts, so the tool derives the cost rather than asking for it.">
+        <Inputs>
+          <Field
+            id="v-gpus"
+            label="GPUs"
+            suffix="cards"
+            value={s.gpuCount === undefined ? "" : String(s.gpuCount)}
+            onChange={(v) => set({ gpuCount: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-watts"
+            label="Draw per card"
+            suffix="W"
+            value={s.wattsPerGpu === undefined ? "" : String(s.wattsPerGpu)}
+            onChange={(v) => set({ wattsPerGpu: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-util"
+            label="Utilisation"
+            suffix="0-1"
+            value={s.utilisation === undefined ? "" : String(s.utilisation)}
+            onChange={(v) => set({ utilisation: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-elec2"
+            label="Electricity"
+            suffix="USD/kWh"
+            value={s.electricityPrice === undefined ? "" : String(s.electricityPrice)}
+            onChange={(v) => set({ electricityPrice: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-hw"
+            label="Hardware"
+            suffix="USD"
+            value={s.hardwareUsd === undefined ? "" : String(s.hardwareUsd)}
+            onChange={(v) => set({ hardwareUsd: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-host"
+            label="Hosting"
+            suffix="USD/mo"
+            value={s.hostingUsdMonth === undefined ? "" : String(s.hostingUsdMonth)}
+            onChange={(v) => set({ hostingUsdMonth: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-sgb"
+            label="Storage price"
+            suffix="USD/GB-mo"
+            value={s.storageUsdGbMonth === undefined ? "" : String(s.storageUsdGbMonth)}
+            onChange={(v) => set({ storageUsdGbMonth: v === "" ? undefined : Number(v) })}
+          />
+        </Inputs>
+      </Group>
+
+      <Group title="Your estimates" note="Everything the specification has no view on, and nothing else.">
+        <Inputs>
+          <Field
+            id="v-spd"
+            label="Network sessions"
+            suffix="per day"
+            assumed
+            value={s.sessionsPerDay === undefined ? "" : String(s.sessionsPerDay)}
+            onChange={(v) => set({ sessionsPerDay: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-tps"
+            label="Turns per session"
+            assumed
+            value={s.turnsPerSession === undefined ? "" : String(s.turnsPerSession)}
+            onChange={(v) => set({ turnsPerSession: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-tpt"
+            label="Tokens per turn"
+            assumed
+            value={s.tokensPerTurn === undefined ? "" : String(s.tokensPerTurn)}
+            onChange={(v) => set({ tokensPerTurn: v === "" ? undefined : Number(v) })}
+          />
+          <Field
+            id="v-val"
+            label="Valuation"
+            suffix="USD"
+            assumed
+            value={s.valuationUsd === undefined ? "" : String(s.valuationUsd)}
+            onChange={(v) => set({ valuationUsd: v === "" ? undefined : Number(v) })}
+          />
+        </Inputs>
+      </Group>
+
+      <Drawer summary="What your inputs derive">
+        <Line
+          label="DA bytes per session"
+          result={sessionBytes}
+          docs={ANCHORS.daBytes}
+          mark="App. F.3"
+          suffix="bytes"
+        />
+        <Line
+          label="Your DA storage duty"
+          result={daGb}
+          docs={ANCHORS.daBytes}
+          mark="§5.3 R5.3a"
+          suffix="GB"
+        />
+        <Line
+          label="DA storage cost"
+          result={daUsd}
+          docs={ANCHORS.daBytes}
+          mark="your storage price"
+          suffix="USD/yr"
+        />
+        <Line label="Rig draw" result={powerKw} docs={ANCHORS.operatingCost} mark="your hardware" suffix="kW" />
+        <Line
+          label="Total operating cost"
+          result={usdCost}
+          docs={ANCHORS.operatingCost}
+          mark="derived"
+          suffix="USD/yr"
+        />
+        <div
+          className="flex flex-wrap items-baseline justify-between gap-x-4 py-2"
+          style={{ borderBottom: "1px solid var(--rule)" }}
+        >
+          <span className="text-[13.5px]" style={{ color: "var(--ink-2)" }}>
+            Committee gate
+          </span>
+          <span className="font-mono text-[13.5px]" style={{ fontFamily: "var(--font-mono)" }}>
+            1 proof / {int(gate.recencyHours)} h
+            <Mark bucket="DEFINED" label="R15.4a" docs={ANCHORS.committeeGate} />
+          </span>
+        </div>
+        <div
+          className="flex flex-wrap items-baseline justify-between gap-x-4 py-2"
+          style={{ borderBottom: "1px solid var(--rule)" }}
+        >
+          <span className="text-[13.5px]" style={{ color: "var(--ink-2)" }}>
+            Calibration renewal
+          </span>
+          <span className="font-mono text-[13.5px]" style={{ fontFamily: "var(--font-mono)" }}>
+            {int(gate.minVerifiedJobs)} jobs, {pct(gate.utilisationFloor)} of your own capacity,
+            every {int(gate.leaseDays)} d
+            <Mark bucket="DEFINED" label="R7.2" docs={ANCHORS.committeeGate} />
+          </span>
+        </div>
+        <p className="mt-3 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+          The specification sets no absolute hardware minimum — the only quantity floor is relative
+          to your own capacity.{" "}
+          <a href={href(ANCHORS.committeeGate)} className="underline decoration-dotted underline-offset-2">
+            What that means
+          </a>
+        </p>
+      </Drawer>
 
       {/* ------------------------------------------------------------------ the answer */}
       <div className="mt-11">
@@ -234,6 +458,10 @@ export function ValidatorPanel({
           result={rev.breakEvenValuation}
           docs={ANCHORS.breakEvenValuation}
           prefix="$"
+          // The derived cost chain puts an electricity tariff at the head of this figure's cite
+          // list, which is true but reads as though the answer came from a power bill. The mark
+          // names the weaker provenance and the schedule the stronger half rests on.
+          mark="your estimates · Appendix A"
         />
         <Headline label="Net per year" result={fwd.netUsdYear} docs={ANCHORS.net} prefix="$" />
         <Headline
@@ -419,22 +647,6 @@ export function ValidatorPanel({
               suffix="years"
               value={String(s.anchorYear)}
               onChange={(v) => set({ anchorYear: v === "" ? 1 : Math.max(0, Number(v)) })}
-            />
-            <Field
-              id="v-elec"
-              label="Electricity"
-              suffix="USD/kWh"
-              assumed
-              value={s.electricityPrice === undefined ? "" : String(s.electricityPrice)}
-              onChange={(v) => set({ electricityPrice: v === "" ? undefined : Number(v) })}
-            />
-            <Field
-              id="v-kw"
-              label="Draw"
-              suffix="kW"
-              assumed
-              value={s.powerKw === undefined ? "" : String(s.powerKw)}
-              onChange={(v) => set({ powerKw: v === "" ? undefined : Number(v) })}
             />
             <Field
               id="v-am"
