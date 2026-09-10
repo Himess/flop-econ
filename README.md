@@ -3,6 +3,12 @@
 **A machine-readable FLOP Network economic parameter set, with provenance — and two calculators
 built on top of it.**
 
+**Live: [flop-econ.vercel.app](https://flop-econ.vercel.app)** · [how each figure is
+calculated](https://flop-econ.vercel.app/docs)
+
+Verified against the yellow paper **0.5.0 (draft)** — the initial public release,
+[flop-labs/yellowpaper](https://github.com/flop-labs/yellowpaper) — fetched 2026-09-10.
+
 [`params.yaml`](params.yaml) is the substantial half of this repository. It mirrors the economic
 subset of the FLOP yellow paper's Appendix A, and every entry carries three things the paper's own
 table does not put together in one place:
@@ -14,15 +20,36 @@ table does not put together in one place:
 - a **note** saying what the value actually governs, and what it does not.
 
 `ABSENT` entries carry **no value at all**. They carry the open item that blocks them. That is the
-whole point: 13 of the 96 parameters an economic model of FLOP needs do not exist yet, and a tool
-that quietly defaults them is worse than no tool.
+whole point: **19 of the 119 parameters** an economic model of FLOP needs do not exist yet
+(88 `DEFINED`, 12 `PLANNED`, 19 `ABSENT`), and a tool that quietly defaults them is worse than no
+tool.
 
-The file also records **seven places where FLOP's own published pages lead or contradict the
-normative specification** — the genesis-supply fork (2,483,460,000 against 3,500,000,000, issue
-#1418), the 85/15 against 99/1 fee split (#1352), the mempool framing on `/intro/agent/` against
-§15.6, the ratified-against-running rotation rank, the active-set cap (E.41), the testnet unlock
-(E.38), and validator reward liquidity (E.39). None are errors. Each one changes what a model
+The file also records **eight places where sources disagree** — the genesis-supply fork
+(2,483,460,000 against 3,500,000,000, issue #1418), the 85/15 against 99/1 fee split (#1352), the
+mempool framing on `/intro/agent/` against §15.6, the ratified-against-running rotation rank, the
+active-set cap (E.41), the testnet unlock (E.38), validator reward liquidity (E.39), and the
+`v0_5_0_rebase` entry below. None of the first seven are errors. Each one changes what a model
 should compute.
+
+## The rebase, recorded rather than hidden
+
+This tool was first built against a pre-publication draft. When the yellow paper was published as
+0.5.0 I re-verified all 29 quoted claims against the released text before making anything public:
+**26 unchanged, 3 reversed** — and the three were load-bearing.
+
+- §15.1 now reads *"A validator function **MUST NOT** require executing inference, producing PoUI
+  proofs, or owning a GPU or TEE"*. The superseded draft said a production validator *"co-locates
+  or delegates to a calibrated miner backend"*.
+- **R15.4c is new** and decides it: the committee recency signal *"MUST be refreshed only by an
+  on-chain accepted verification duty"*, and *"Prover credit (`OnProofVerified`) MUST NOT refresh
+  it."* The one thing the old gate required is the one thing that no longer counts.
+- *"The two heavy legs"* became *"The one heavy leg is DA storage/serving; no validator duty
+  requires a GPU or TEE"*, and a SHOULD-level reference profile appeared — 8 cores ≥3.4 GHz SMT
+  off, 32 GB ECC, 4 TB enterprise NVMe, 1 Gbps symmetric unmetered.
+
+Two findings built on the old reading were **withdrawn**, not edited, and one finding replaced
+them. A finding the published specification contradicts is worse than no finding. The change is
+carried as the `v0_5_0_rebase` disagreement so it is visible in the data, not just in the history.
 
 ## The calculators
 
@@ -54,7 +81,7 @@ params.yaml                  the parameter set — the deliverable
   └─ scripts/gen-params.ts   generates ↓, and rejects an ABSENT entry that carries a value
 model/params.generated.ts    typed and exhaustive; no runtime YAML, works in Node and the browser
 model/{types,emission,validator,agent}.ts    pure functions, no React
-model/*.test.ts              68 tests
+model/*.test.ts              163 tests
 app/                         Next.js UI
 ```
 
@@ -67,7 +94,7 @@ constant typed into a component.
 ```bash
 npm install
 npm run gen:params   # after editing params.yaml
-npm test             # 68 tests
+npm test             # 163 tests
 npm run dev
 ```
 
@@ -85,7 +112,7 @@ npm run dev
 - No function returns a number when a required `ABSENT` input is missing.
 - No `toLocaleString()` call anywhere omits its locale.
 
-## Two findings the model surfaces
+## Findings the model surfaces
 
 **The 1.1× finality-committee premium is worth nothing to an average validator.** The committee is
 resampled every epoch (R15.4a), so annual income tracks the seating *rate*, not a snapshot. At the
@@ -98,13 +125,34 @@ sampling rate (`sampled_audit_alpha_ppm`). Break-even is **≥ 5 FLOP per audite
 the pool funding Tier-3 enforcement cannot pay for its own audits — and `audit_fee_per_turn` is
 explicitly *"gated on … pool solvency"*, so payment simply stops.
 
+**A validator needs no GPU, at `MUST NOT` strength.** See the rebase section above. The cost of
+running one is a node, a link and a stake.
+
+**The DA storage duty is a rounding error, and §15.3 calls it the one heavy leg.** Derived from the
+specification's own byte rules — a `VerifiedTurn` at `269 + compact_len(L) + 33L` B (App. F.3), a
+mandatory TOPLOC commitment at ~258 B per 32 tokens (§3.4), 14-day ephemeral retention, rate-½
+erasure coding onto a stake-weighted subset — one validator holds **0.12 GB** at 5,000 sessions a
+day and ~23 GB at a million. Cents to a few dollars a year. The R=6 subset size is never stated and
+does not need to be: it cancels. Whatever is heavy about the leg is the bandwidth, which E.47
+leaves open.
+
+**Profitable is not the same as paid.** Under E.39's current behaviour the block-reward leg is
+swept into stake rather than becoming spendable, so a validator can be profitable on paper from
+month 5 and still have nothing withdrawable at month 36.
+
 ## Provenance and caveat
 
 The yellow paper states its own precedence rule and this repository follows it: *"Concrete figures
 appearing inline are worked examples; the value of record is always Appendix A."*
 
-It is a **Draft** on roughly a weekly cadence. The inventory is current as of the `fetched` date in
-`params.yaml`; re-fetch and diff before trusting it. Per §0, nothing here is a claim about running
-code — the specification *"describes the protocol FLOP targets, not a snapshot of the codebase."*
+It is a **draft**, and it moves. Three of this tool's claims were overturned by a single release.
+The inventory is current as of the `fetched` date in `params.yaml` and the site carries the same
+stamp in its masthead; re-fetch and diff before trusting either. Per §0, nothing here is a claim
+about running code — the specification *"describes the protocol FLOP targets, not a snapshot of the
+codebase."*
+
+The yellow paper itself is not vendored here. `params.yaml` records the upstream source, the
+release and the sha256 of the fetch it was built from; get the paper from
+[flop-labs/yellowpaper](https://github.com/flop-labs/yellowpaper).
 
 Not financial advice. Not a forecast.

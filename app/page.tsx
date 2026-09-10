@@ -5,6 +5,7 @@ import type { AssumptionRef } from "@/model/types";
 import { ValidatorPanel } from "./components/ValidatorPanel";
 import { AgentPanel } from "./components/AgentPanel";
 import { ANCHORS, DOCS_PATH } from "./lib/docs";
+import { META } from "@/model/params.generated";
 import { Mark } from "./components/Marks";
 import {
   cleared,
@@ -18,6 +19,7 @@ import {
 } from "./lib/state";
 
 const SPEC = "https://github.com/flop-labs/yellowpaper";
+const REPO = "https://github.com/Himess/flop-econ";
 
 /** The audit trail behind the chip: label, value, unit. Two lists, one shape. */
 function Ledger({ rows, muted }: { rows: AssumptionRef[]; muted?: boolean }) {
@@ -111,6 +113,21 @@ export default function Page() {
           <span className="text-[12px]" style={{ color: "var(--ink-3)" }}>
             validator &amp; agent economics
           </span>
+          {/* A version stamp, because three of this tool's claims were overturned by one spec
+              release. It says what it was checked against and when, and it reads from META so it
+              cannot go stale independently of the parameter set. */}
+          <a
+            href={DOCS_PATH}
+            className="rounded-full px-2 py-[2px] text-[10.5px] no-underline"
+            style={{
+              border: "1px solid var(--rule)",
+              color: "var(--ink-3)",
+              fontFamily: "var(--font-mono)",
+            }}
+            title="The yellow paper release this tool was verified against."
+          >
+            yp {String(META.spec_status).split(" ")[0]} · {String(META.fetched)}
+          </a>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-[12.5px]">
           <a
@@ -126,6 +143,13 @@ export default function Page() {
             style={{ color: "var(--ink-3)" }}
           >
             Yellow paper
+          </a>
+          <a
+            href={REPO}
+            className="underline decoration-dotted underline-offset-[3px]"
+            style={{ color: "var(--ink-3)" }}
+          >
+            Repository
           </a>
         </div>
       </header>

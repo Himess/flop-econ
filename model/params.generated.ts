@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:f6860a7e28b9851e)
+// Source: params.yaml (sha256:55fc98590ab6e086)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -29,7 +29,7 @@ export interface Disagreement {
   readonly handling: string;
 }
 
-export const PARAMS_SHA256 = "f6860a7e28b9851e";
+export const PARAMS_SHA256 = "55fc98590ab6e086";
 
 export const META = {
   "spec_source": "https://github.com/flop-labs/yellowpaper (yellowpaper.md, main)",
@@ -40,8 +40,8 @@ export const META = {
   "fetch_bytes": 248811,
   "fetch_sha256": "cb414e5cdfe72eec",
   "fetch_note": "REBASED onto the initial public release. The prior basis was a 2026-09-09 fetch of the pre-publication draft (spec/yp.txt, 203,145 B), kept as evidence because three load-bearing statements changed between them. Re-verified all 29 quoted claims against the published text: 26 unchanged, 3 reversed - see the v0_5_0_rebase disagreement.",
-  "extraction": "spec/yp-v0.5.0.md",
-  "superseded_basis": "spec/yp.txt",
+  "extraction": "yellowpaper.md from the upstream repository, not vendored here - get it from spec_source and check it against fetch_sha256.",
+  "superseded_basis": "A 2026-09-09 fetch of the pre-publication draft (203,145 B), retained locally as evidence of the three reversed statements. Not published: it is FLOP's document, not this repository's.",
   "appendix_a_rows": {
     "enforced": 112,
     "reference_only": 33,
