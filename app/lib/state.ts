@@ -192,12 +192,28 @@ export function toQuery(s: Scenario): string {
   return q.toString();
 }
 
+/**
+ * A shared link and a saved scenario are both untrusted input, and neither passes through the
+ * field that sanitises typing. Every quantity here is non-negative, so a negative one is a
+ * malformed link rather than a scenario — dropping it lands on the example's value, which is the
+ * same thing a cleared field does. Admitting it instead used to unmount the page: a negative
+ * stake makes the committee-seat probability negative and the model refuses to compute on it.
+ */
 function readNum(q: URLSearchParams, key: string): number | undefined {
   if (!q.has(key)) return undefined;
   const raw = q.get(key)!;
   if (raw === "") return undefined;
   const v = Number(raw);
-  return Number.isFinite(v) ? v : undefined;
+  return Number.isFinite(v) && v >= 0 ? v : undefined;
+}
+
+/** The same rule for a scenario coming back out of localStorage, which no parser guards. */
+function sanitize(p: Partial<Scenario>): Partial<Scenario> {
+  const out: Partial<Scenario> = { ...p };
+  for (const [k, v] of Object.entries(out) as [keyof Scenario, unknown][]) {
+    if (typeof v === "number" && !(Number.isFinite(v) && v >= 0)) delete out[k];
+  }
+  return out;
 }
 
 export function fromQuery(query: string): Partial<Scenario> | null {
@@ -229,7 +245,7 @@ export function load(): { scenario: Scenario; source: "url" | "saved" | "example
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<Scenario>;
+      const parsed = sanitize(JSON.parse(raw) as Partial<Scenario>);
       return { scenario: { ...EXAMPLE, ...parsed }, source: "saved" };
     }
   } catch {

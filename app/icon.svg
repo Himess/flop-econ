@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="flop-econ">
+  <rect width="32" height="32" rx="6" fill="#0d1f31"/>
+  <!-- The three buckets, in their own colours: DEFINED, PLANNED, ABSENT. The last one is hollow
+       because an ABSENT parameter carries no value — which is the whole argument of the tool. -->
+  <rect x="6"  y="17" width="5" height="9" rx="1.5" fill="#5fd1c4"/>
+  <rect x="13.5" y="12" width="5" height="14" rx="1.5" fill="#e5b45c"/>
+  <rect x="21" y="7.5" width="5" height="18.5" rx="1.5" fill="none" stroke="#f27e6b" stroke-width="1.6" stroke-dasharray="3 2.2"/>
+</svg>

@@ -120,6 +120,27 @@ export function blocked(missing: readonly { key: string; cite: string; label: st
   };
 }
 
+/**
+ * A refusal for a figure the USER has to supply, as distinct from one the specification lacks.
+ *
+ * `blocked` explains itself with "the specification does not define this, so there is nothing to
+ * default to". That sentence is false when the real situation is a box the visitor just cleared,
+ * and the wrong answer is worse than the wrong sentence: substituting a zero for an empty
+ * self-stake made the tool print a break-even of twenty-three billion dollars, which looks like a
+ * result. Clearing a required input stops the calculation — that rule is in the brief, and this
+ * is what enforces it.
+ */
+export function needsInput(fields: readonly { key: string; label: string }[]): Blocked {
+  const labels = fields.map((f) => f.label);
+  return {
+    blocked: true,
+    missing: fields.map((f) => f.key),
+    cites: [],
+    message: labels.length === 1 ? `Enter ${labels[0]}` : `Enter ${joinAnd(labels)}`,
+    detail: "Your own figure. The tool will not stand a zero in for it.",
+  };
+}
+
 function indefinite(label: string): string {
   return /^[aeiou]/i.test(label) ? `an ${label}` : `a ${label}`;
 }

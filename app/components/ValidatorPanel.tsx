@@ -29,7 +29,7 @@ import {
 const MONTHS_PER_YEAR = 12;
 import { bothScenarios, liquiditySummary, payback } from "@/model/timeline";
 import { param } from "@/model/params.generated";
-import { isBlocked, num, type AssumptionRef } from "@/model/types";
+import { isBlocked, needsInput, num, type AssumptionRef } from "@/model/types";
 import { auto, dp2, int, pct } from "../lib/format";
 import { ANCHORS, href } from "../lib/docs";
 import { SET_SIZES, type Scenario } from "../lib/state";
@@ -167,6 +167,25 @@ export function ValidatorPanel({
   const fwd = useMemo(
     () => forward(revenueFlop, valuationInputs, costs, "announced"),
     [revenueFlop, valuationInputs, costs],
+  );
+
+  /**
+   * The two figures nothing here can be computed without.
+   *
+   * `stake ?? 0` stood in for a cleared field, and a zero stake is arithmetically fine — it just
+   * answers a question nobody asked, in eleven digits. Clearing the self-stake printed a
+   * break-even of $23,916,567,702 under a mark that said "yours", which reads as a result. A
+   * cleared required input is a stop, and the brief says so.
+   */
+  const inputGate = useMemo(
+    () =>
+      s.stake && s.networkStake
+        ? null
+        : needsInput([
+            ...(s.stake ? [] : [{ key: "stake", label: "your self-stake" }]),
+            ...(s.networkStake ? [] : [{ key: "networkStake", label: "the average stake" }]),
+          ]),
+    [s.stake, s.networkStake],
   );
 
   /**
@@ -445,21 +464,28 @@ export function ValidatorPanel({
         <Answers>
         <Headline
           label="Break-even valuation"
-          result={rev.breakEvenValuation}
+          result={inputGate ?? rev.breakEvenValuation}
           docs={ANCHORS.breakEvenValuation}
           prefix="$"
           // Two things this figure rests on that a reader must not have to dig for: their own
           // estimates, and the fact that it divides by an ANNOUNCED genesis Appendix A does not
           // carry. Naming Appendix A here would be the wrong half of the provenance.
           mark="announced genesis · yours"
+          fallback={inputGate?.message}
         />
-        <Headline label="Net per year" result={fwd.netUsdYear} docs={ANCHORS.net} prefix="$" />
+        <Headline
+          label="Net per year"
+          result={inputGate ?? fwd.netUsdYear}
+          docs={ANCHORS.net}
+          prefix="$"
+          fallback={inputGate?.message}
+        />
         <Headline
           label="Cash payback"
-          result={payLive.cashMonths}
+          result={inputGate ?? payLive.cashMonths}
           docs={ANCHORS.cashPayback}
           suffix="months"
-          fallback={`never within ${int(s.horizonMonths)} months`}
+          fallback={inputGate?.message ?? `never within ${int(s.horizonMonths)} months`}
           // Not just E.39. This number moves with the DA, GPU, hardware and hosting figures the
           // user typed, so the mark has to name the weaker of the two provenances first.
           mark="your assumption · E.39"

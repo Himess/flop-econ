@@ -1,5 +1,5 @@
 // GENERATED FILE — DO NOT EDIT BY HAND.
-// Source: params.yaml (sha256:93204835b5e2e2ec)
+// Source: params.yaml (sha256:86f5d99921931932)
 // Regenerate: npm run gen:params
 //
 // Every constant the model and UI use traces to an entry here. There are no magic numbers
@@ -31,7 +31,7 @@ export interface Disagreement {
   readonly resolved?: string;
 }
 
-export const PARAMS_SHA256 = "93204835b5e2e2ec";
+export const PARAMS_SHA256 = "86f5d99921931932";
 
 export const META = {
   "spec_source": "https://github.com/flop-labs/yellowpaper (yellowpaper.md, main)",
@@ -1034,7 +1034,7 @@ export const DISAGREEMENTS: readonly Disagreement[] = [
     "status": "LIVE and UNRESOLVED, and FLOP's own surfaces currently disagree with each other. Verified 2026-09-10: flop.finance/assets/tokenomics.png still serves the OLDER graphic (17.2bn, 0.6%, airdrop 3.5bn, validators 0.31bn) - confirmed from origin, not cache, with a unique query string returning cf-cache-status MISS and the same ETag c904a1d2e67ac448a7fe13868cf01999. The /teaser/ page is dated \"Updated 2026-08-26\" and its alt text describes that older graphic. So the newer 18.1bn figures are NOT on the website as of this check. This is the same shape as the pre-D-0438 genesis fork: a downstream publication leading the normative parameter set. That one was ratified 19 days later.",
     "quote": "\"// 18.1bn total supply by year 10   // 0.5% terminal inflation / yr ... Airdrop 4.4bn 24.3% - Miners 1.20bn 6.6% - Validators 1.20bn 6.6% - Agents 1.20bn 6.6% - Reserve / Incentives 0.80bn 4.4%\" (FLOP tokenomics graphic, 2026-09-10, marked DRAFT; supplied by the operator, not served from flop.finance at the time of checking)",
     "tracking": "No decision id. Both the graphic and the site carry a preliminary/draft disclaimer. Watch for a D-04xx ratifying a genesis_validator_airdrop above 305,505,000.",
-    "handling": "Model Appendix A - 3,500,000,000 and 305,505,000 - because the precedence rule this file follows is the yellow paper's own: \"the value of record is always Appendix A\". The 4.4bn figure is carried here as the named alternative, exactly as 3,500,000,000 was carried before D-0438 ratified it. If it ratifies, genesis_supply moves to 4,400,000,000 and genesis_validator_airdrop to 1,200,000,000; the tool's break-even valuation would rise a further ~11% at the year-1 anchor. Older graphic archived at spec/assets/tokenomics-live-2026-09-10.png (sha256 e05656909de1a8a9)."
+    "handling": "params.yaml keeps Appendix A as the value of record - genesis_supply 3,500,000,000 DEFINED, genesis_validator_airdrop 305,505,000 - because the precedence rule this file follows is the yellow paper's own: \"the value of record is always Appendix A\". The announced figures sit beside it as genesis_supply_announced and genesis_validator_airdrop_announced, marked PLANNED, exactly as 3,500,000,000 was carried before D-0438 ratified it. The CALCULATOR is a separate decision and goes the other way. Its headline break-even divides by the announced 4,400,000,000, carries the mark \"announced genesis\" on the figure itself, and prints the Appendix A break-even beside it in the same panel. Measured on the shipped example: $65,034,029 announced against $57,655,008 ratified, a 12.8% gap. Modelling the announced figure is an operator decision, so no computed result resting on it can read DEFINED. Older graphic archived at spec/assets/tokenomics-live-2026-09-10.png (sha256 e05656909de1a8a9)."
   },
   {
     "id": "v0_5_0_rebase",

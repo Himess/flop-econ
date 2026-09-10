@@ -20,8 +20,8 @@ table does not put together in one place:
 - a **note** saying what the value actually governs, and what it does not.
 
 `ABSENT` entries carry **no value at all**. They carry the open item that blocks them. That is the
-whole point: **19 of the 119 parameters** an economic model of FLOP needs do not exist yet
-(88 `DEFINED`, 12 `PLANNED`, 19 `ABSENT`), and a tool that quietly defaults them is worse than no
+whole point: **19 of the 128 parameters** an economic model of FLOP needs do not exist yet
+(94 `DEFINED`, 15 `PLANNED`, 19 `ABSENT`), and a tool that quietly defaults them is worse than no
 tool.
 
 The file also records **nine places where sources disagree** — the genesis-supply fork
@@ -34,10 +34,17 @@ Only that eighth one is open: a FLOP tokenomics graphic dated 2026-09-10 puts th
 airdrop at 1.20bn and total year-10 supply at 18.1bn, against Appendix A's 305,505,000 and
 17,186,624,000. The difference is exactly the validator line. When this was checked,
 flop.finance was still serving the *older* graphic from origin, so FLOP's own surfaces disagree
-with each other. This file models Appendix A, because the yellow paper's own precedence rule says
-to, and carries 4.4bn as the named alternative — exactly as 3,500,000,000 was carried before
-D-0438 ratified it 19 days later. None of the others are errors. Each one changes what a model
-should compute.
+with each other.
+
+`params.yaml` keeps Appendix A as its value of record and carries 4.4bn beside it as a `PLANNED`
+alternative — exactly as 3,500,000,000 was carried before D-0438 ratified it 19 days later. **The
+calculator goes the other way, deliberately:** its headline break-even divides by the announced
+4.4bn, says `announced genesis` on the figure itself, and prints the Appendix A break-even in the
+panel below it. On the shipped example those are **$65,034,029** and **$57,655,008** — a 12.8%
+gap, and the reason both are on screen. Nothing computed from the announced figure can read
+`DEFINED`.
+
+None of the other eight are errors. Each one changes what a model should compute.
 
 ## The rebase, recorded rather than hidden
 

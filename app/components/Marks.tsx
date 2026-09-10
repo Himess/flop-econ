@@ -91,8 +91,10 @@ export function Headline({
           <span style={{ fontSize: "clamp(15px, 2.2vw, 19px)" }}>{fallback ?? "needs an input"}</span>
         ) : (
           <>
+            {/* The sign belongs outside the unit: a loss reads -$14,887, never $-14,887. */}
+            {result.value < 0 ? "-" : ""}
             {prefix}
-            {auto(result.value)}
+            {auto(Math.abs(result.value))}
             {suffix ? (
               <span className="ml-1 text-[14px]" style={{ color: "var(--ink-3)" }}>
                 {suffix}
@@ -154,6 +156,22 @@ export function Line({
   );
 }
 
+/**
+ * Keep a field to digits and one decimal point.
+ *
+ * Every input in this tool is a non-negative quantity — a stake, a tariff, a count, a duration.
+ * None of them has a meaningful negative value, and admitting one is not a cosmetic problem: a
+ * negative self-stake produces a negative committee-seat probability, which trips a model
+ * invariant and unmounts the page. Typing a minus sign gave you a blank screen and no way back
+ * but a reload. So the character never reaches state, the way a letter never reaches a number
+ * field. Commas go too, which is what made a pasted "300,000,000" work.
+ */
+function decimalOnly(raw: string): string {
+  const cleaned = raw.replace(/[^0-9.]/g, "");
+  const dot = cleaned.indexOf(".");
+  return dot === -1 ? cleaned : cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, "");
+}
+
 export function Field({
   id,
   label,
@@ -180,9 +198,23 @@ export function Field({
    */
   grouped?: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
-  const shown =
-    grouped && !editing && value !== "" && Number.isFinite(Number(value))
+  /**
+   * What the field shows while you are typing in it, which is not always what the model holds.
+   *
+   * The parent stores a number and hands it back as `String(n)`, so an intermediate keystroke
+   * round-trips through `Number`: type "0." and it becomes 0, which renders as "0" and eats the
+   * point. You could not type 0.09 into the electricity field at all — every attempt collapsed to
+   * "9". The tariff, the settle-per-turn and the pay-unit rate are all decimals, so this was most
+   * of the fields that matter.
+   *
+   * The draft is the literal characters between focus and blur. The model still updates on every
+   * keystroke, so nothing is deferred; only the display stops arguing with the caret.
+   */
+  const [draft, setDraft] = useState<string | null>(null);
+  const editing = draft !== null;
+  const shown = editing
+    ? draft
+    : grouped && value !== "" && Number.isFinite(Number(value))
       ? Number(value).toLocaleString("en-US")
       : value;
   return (
@@ -197,10 +229,14 @@ export function Field({
           inputMode="decimal"
           value={shown}
           placeholder={placeholder ?? (assumed ? "yours" : undefined)}
-          onFocus={() => setEditing(true)}
-          onBlur={() => setEditing(false)}
+          onFocus={() => setDraft(value)}
+          onBlur={() => setDraft(null)}
           // Separators are display only; a pasted "300,000,000" still parses.
-          onChange={(e) => onChange(e.target.value.replace(/,/g, ""))}
+          onChange={(e) => {
+            const v = decimalOnly(e.target.value);
+            setDraft(v);
+            onChange(v);
+          }}
           // min-w-0 rather than w-full: a flex item at 100% width pushes its unit label off the
           // right edge in a two-column phone grid, which is how "FLOP/yr" got clipped.
           className="min-w-0 flex-1 rounded-[3px] px-2.5 py-2 font-mono text-[13px]"
