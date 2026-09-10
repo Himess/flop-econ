@@ -1,5 +1,13 @@
 # Valuation layer, emission audit, and two UI fixes
 
+> **Correction, 2026-09-10.** This report was written against a pre-publication draft and states
+> `genesis_supply` = 2,483,460,000 as the ratified value, with 3,500,000,000 as an unratified
+> workbook figure. That is backwards. **D-0438 ratified 3,500,000,000**, superseding the
+> D-0421/D-0435 pool sizes. Genesis supply is the divisor for token price, so every dollar figure
+> below is understated: at the year-one anchor the correction raises supply 16.9%, lowers the
+> implied price 14.5%, and raises the break-even valuation 16.9%. The body is left as the dated
+> record. See [RECONCILE.md](RECONCILE.md).
+
 Prepared 2026-09-09 against the yellow paper at `flop.finance/intro/yellowpaper/`, re-fetched and
 byte-identical to the copy the parameter set was built from.
 

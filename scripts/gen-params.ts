@@ -84,6 +84,8 @@ export interface Disagreement {
   readonly quote?: string;
   readonly tracking?: string;
   readonly handling: string;
+  /** ISO date a disagreement was settled. Resolved entries are marked, never removed. */
+  readonly resolved?: string;
 }
 
 export const PARAMS_SHA256 = ${JSON.stringify(hash)};

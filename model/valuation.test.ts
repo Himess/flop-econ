@@ -20,7 +20,8 @@ import {
   type ValuationInputs,
 } from "./valuation";
 import { blockReward, subsidyPerBlock, BLOCKS_PER_YEAR } from "./emission";
-import { isBlocked } from "./types";
+import { isBlocked, num } from "./types";
+import { param } from "./params.generated";
 
 const COSTS: CostInputs = {
   electricityPrice: 0.09,
@@ -57,10 +58,33 @@ describe("supply model", () => {
     }
   });
 
-  it("the workbook genesis column can never read DEFINED — it is unratified", () => {
+  /**
+   * The labels inverted on 2026-09-10. D-0438 ratified 3,500,000,000 and superseded the
+   * D-0421/D-0435 pool sizes; this tool had been carrying 2,483,460,000 as the ratified value and
+   * 3,500,000,000 as an unratified workbook figure — backwards, on a public site, on the divisor
+   * for every dollar figure. The second column is now the superseded one and can never read
+   * DEFINED, for the mirror-image reason it could not before.
+   */
+  it("the superseded genesis column can never read DEFINED", () => {
     expect(outstandingSupply(1, "params").bucket).toBe("DEFINED");
     expect(outstandingSupply(1, "workbook").bucket).toBe("PLANNED");
-    expect(outstandingSupply(1, "workbook").cites.join(" ")).toContain("#1418");
+    expect(outstandingSupply(1, "workbook").cites.join(" ")).toContain("D-0438");
+  });
+
+  it("the value of record is the ratified 3.5bn, not the superseded 2.48bn", () => {
+    expect(GENESIS.params.value).toBe(3_500_000_000);
+    expect(GENESIS.workbook.value).toBe(2_483_460_000);
+    expect(num(param("genesis_supply"))).toBe(3_500_000_000);
+  });
+
+  /** R9.4: genesis MUST be allocated to exactly four buckets and nothing else. */
+  it("the four genesis buckets sum exactly to genesis supply", () => {
+    const sum =
+      num(param("genesis_miner_airdrop")) +
+      num(param("genesis_validator_airdrop")) +
+      num(param("genesis_agent_airdrop")) +
+      num(param("genesis_reserve"));
+    expect(sum).toBe(num(param("genesis_supply")));
   });
 
   it("says outstanding, not circulating, and names why", () => {
@@ -79,10 +103,12 @@ describe("price", () => {
     const a = tokenPrice(VAL, "params");
     const b = tokenPrice(VAL, "workbook");
     if (isBlocked(a) || isBlocked(b)) throw new Error("unexpected block");
-    expect(a.value).toBeGreaterThan(b.value); // more tokens in the workbook -> lower price
+    // Ratified genesis is now the LARGER pool, so the ratified price is the lower one. The
+    // direction of this inequality flipping is the whole correction.
+    expect(a.value).toBeLessThan(b.value);
     const spread = genesisSpread(VAL);
     if (isBlocked(spread)) throw new Error("unexpected block");
-    expect(spread.value).toBeGreaterThan(0.1);
+    expect(Math.abs(spread.value)).toBeGreaterThan(0.05);
   });
 
   it("direct mode takes the price as given and does not consult supply", () => {
@@ -201,12 +227,14 @@ describe("reverse — the decision criterion", () => {
     expect(r.breakEvenValuation.value).toBeCloseTo(r.breakEvenPrice.value * r.supplyAtAnchor.value, 4);
   });
 
-  it("the unratified genesis figure moves the user's own threshold", () => {
+  it("the superseded genesis figure moves the user's own threshold", () => {
     const a = reverse(REV_FLOP, COSTS, 1, "params");
     const b = reverse(REV_FLOP, COSTS, 1, "workbook");
     if (isBlocked(a.breakEvenValuation) || isBlocked(b.breakEvenValuation)) throw new Error("unexpected block");
-    // Same break-even PRICE (costs and FLOP revenue are unchanged), different valuation.
-    expect(b.breakEvenValuation.value).toBeGreaterThan(a.breakEvenValuation.value);
+    // Same break-even PRICE (costs and FLOP revenue are unchanged), different valuation. The
+    // ratified pool is now the larger one, so the ratified break-even valuation is the higher
+    // number — the inequality flipped with D-0438, and this is the figure the tool headlines.
+    expect(a.breakEvenValuation.value).toBeGreaterThan(b.breakEvenValuation.value);
   });
 
   it("blocks rather than dividing by zero revenue", () => {

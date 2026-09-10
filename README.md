@@ -25,7 +25,7 @@ whole point: **19 of the 119 parameters** an economic model of FLOP needs do not
 tool.
 
 The file also records **eight places where sources disagree** — the genesis-supply fork
-(2,483,460,000 against 3,500,000,000, issue #1418), the 85/15 against 99/1 fee split (#1352), the
+(resolved 2026-09-10 by D-0438 in favour of 3,500,000,000, issue #1418), the 85/15 against 99/1 fee split (#1352), the
 mempool framing on `/intro/agent/` against §15.6, the ratified-against-running rotation rank, the
 active-set cap (E.41), the testnet unlock (E.38), validator reward liquidity (E.39), and the
 `v0_5_0_rebase` entry below. None of the first seven are errors. Each one changes what a model

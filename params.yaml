@@ -40,7 +40,7 @@ meta:
     enforced: 112
     reference_only: 33
     derived_narrative: 23
-  open_items_total: 28
+  open_items_total: 29
 
 # ---------------------------------------------------------------------------------------------
 # Emission and role splits
@@ -157,18 +157,67 @@ parameters:
       reward, exactly 0 from era 5. NOT participant revenue - it dilutes and pays neither role.
 
   - key: genesis_supply
-    value: 2483460000
+    value: 3500000000
     unit: FLOP
     bucket: DEFINED
-    cite: "Appendix A; §2.3; R9.7; D-0421"
-    note: "See disagreements.genesis_supply_fork - the workbook and FLOP's own calculator use 3.5bn."
+    cite: "Appendix A (param-genesis_supply); §9.3; R9.4; R9.7; D-0438"
+    note: >-
+      CORRECTED 2026-09-10. This tool carried 2,483,460,000 and labelled 3,500,000,000 as an
+      unratified workbook figure. That is backwards: D-0438 ratified 3,500,000,000, superseding the
+      D-0421/D-0435 pool sizes and leaving emission untouched. Appendix A's row reads
+      "3_500_000_000 FLOP | §9.3 | D-0438". R9.4 requires it be allocated to exactly four genesis
+      buckets and nothing else. Genesis supply is the divisor for token price, so every dollar
+      figure the tool printed before this correction was wrong - see disagreements.genesis_supply_fork,
+      now marked resolved.
+
+  - key: genesis_miner_airdrop
+    value: 1200000000
+    unit: FLOP
+    bucket: DEFINED
+    cite: "Appendix A (param-genesis_miner_airdrop); §9.3; R9.4; D-0438"
+    note: "34.29% of genesis. One of R9.4's four buckets."
+
+  - key: genesis_agent_airdrop
+    value: 1200000000
+    unit: FLOP
+    bucket: DEFINED
+    cite: "Appendix A (param-genesis_agent_airdrop); §9.3; R9.4; D-0438"
+    note: "34.29% of genesis. One of R9.4's four buckets."
+
+  - key: genesis_reserve
+    value: 794495000
+    unit: FLOP
+    bucket: DEFINED
+    cite: "Appendix A (param-genesis_reserve); §9.3; R9.4; D-0438"
+    note: >-
+      22.70% of genesis - "Ecosystem/incentives reserve". The fourth bucket. The four sum exactly:
+      1,200,000,000 + 305,505,000 + 1,200,000,000 + 794,495,000 = 3,500,000,000.
+
+  - key: airdrop_vesting_duration_blocks
+    value: 7776000
+    unit: blocks
+    bucket: DEFINED
+    cite: "Appendix A (param-airdrop_vesting_duration_blocks); §9.3"
+    note: "90-day linear airdrop vesting at 1 s blocks. Not modelled by the tool - see E.38."
+
+  - key: subsidy_duration_blocks
+    value: 315360000
+    unit: blocks
+    bucket: DEFINED
+    cite: "Appendix A (param-subsidy_duration_blocks); §9; R9.3"
+    note: >-
+      ~10 years, 5 subsidy halving eras. Total minted = 63,072,000 x (16+8+4+2+1) = 1,955,232,000
+      FLOP (R9.3). This is the figure FLOP's teaser rounds to "2.0bn Team + Foundation".
 
   - key: genesis_validator_airdrop
     value: 305505000
     unit: FLOP
     bucket: DEFINED
-    cite: "Appendix A; §2.3; D-0435"
-    note: "Exactly validator_min_stake x 1,000 (the active-set cap). Relation inferred, not stated."
+    cite: "Appendix A (param-genesis_validator_airdrop); §9.3; D-0435"
+    note: >-
+      Unchanged by D-0438, and the same figure FLOP's teaser genesis table gives
+      ("Validators 305,505,000 (1.8%) - the aggregate stake that secures the network at launch").
+      Exactly validator_min_stake x 1,000. Relation inferred, not stated.
 
 # ---------------------------------------------------------------------------------------------
 # Validator: stake, set membership, rotation
@@ -1127,16 +1176,26 @@ disagreements:
       claims were re-verified unchanged; spec/yp.txt is kept as evidence of what moved.
 
   - id: genesis_supply_fork
-    spec_says: "genesis_supply = 2,483,460,000 FLOP (Appendix A, §2.3, R9.7, D-0421)"
-    downstream_says: "3,500,000,000 FLOP (tokenomics workbook rev 2026-08-26; teaser; /intro/revenue/)"
-    status: "Unratified. flop.finance/intro/revenue/ states it plainly."
+    resolved: "2026-09-10"
+    spec_says: >-
+      RESOLVED IN FAVOUR OF THE DOWNSTREAM FIGURE. Appendix A now reads genesis_supply =
+      3_500_000_000 FLOP (§9.3, D-0438); R9.4 requires it be split across exactly four buckets.
+    downstream_says: >-
+      3,500,000,000 FLOP - the position /intro/revenue/, the teaser and the tokenomics workbook
+      held from 2026-08-22, now ratified.
+    status: >-
+      RESOLVED 2026-09-10 by D-0438, which superseded the D-0421/D-0435 pool sizes and left
+      emission untouched. Kept rather than deleted: this tool published the OLD figure as ratified
+      and the new one as unratified, which is backwards, and the record of that matters more than
+      a tidy file.
     quote: >-
-      "This leads protocol params deliberately. params/flop-protocol-params.yaml still carries the
-      ratified genesis_supply = 2,483,460,000 (D-0435); the workbook restated the pool to
-      3,500,000,000 on 2026-08-22, and landing that in params is Tier A work blocked on an open gap
-      with no ratifying decision yet (ECON-009 §2.3 W1, tracked in issue #1418)."
-    tracking: "#1418 (stated on flop.finance/intro/revenue/, not in the yellow paper)"
-    handling: "Model the params value as live. Expose the workbook value as an explicit alternative."
+      "D-0438 ratified genesis_supply = 3,500,000,000 (the workbook's 2026-08-22 restatement), so
+      the params page, the Yellow Paper appendix and this cash-flow model now agree."
+      (flop.finance/intro/revenue/, retrieved 2026-09-10)
+    tracking: "#1418, closed by D-0438"
+    handling: >-
+      Model 3,500,000,000. The superseded 2,483,460,000 is still computed side by side, because the
+      difference is what the tool's own published dollar figures were wrong by.
 
   - id: fee_split
     spec_says: "audit_fee_split_ppm = 10,000 ppm -> miner 99% / audit pool 1% (Appendix A, §7, D-0403)"
@@ -1179,7 +1238,12 @@ disagreements:
     downstream_says: >-
       E.41: "the runtime cannot reach it: MaxAuthorities = MAX_ACTIVE_VALIDATORS = 200".
       /intro/validator/: "does not yet enforce the cap."
-    status: "Ratified but not wired."
+    status: >-
+      STRENGTHENED 2026-09-10. Not merely unwired: §5.3 of the published release states plainly
+      that "1,000 active validators is not a supported runtime state", and refers to "the supported
+      active-set maximum of 200" while sizing the attestation bundle. Appendix A still carries
+      validator_active_set_cap = 1,000 under D-0437, so the ratified cap and the supported runtime
+      state disagree inside one document.
     tracking: "#1393 (yellow paper, E.41 Blocking)"
     handling: "Model both 200 and 1,000; the per-validator share differs 5x between them."
 

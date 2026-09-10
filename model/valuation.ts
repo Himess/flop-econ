@@ -24,15 +24,22 @@ export type GenesisScenario = "params" | "workbook";
 export const GENESIS: Record<GenesisScenario, { value: number; label: string; cite: string }> = {
   params: {
     value: num(param("genesis_supply")),
-    label: "ratified params",
+    label: "ratified (D-0438)",
     cite: param("genesis_supply").cite,
   },
   workbook: {
-    // Not a spec value. Carried because FLOP's own calculator uses it and the difference changes
-    // the user's answer by ~41%. See the genesis_supply_fork disagreement.
-    value: 3_500_000_000,
-    label: "workbook",
-    cite: "flop.finance/intro/revenue/ (tokenomics workbook rev 2026-08-26); unratified, #1418",
+    /**
+     * The SUPERSEDED figure, and the labels used to be the other way round.
+     *
+     * This tool carried 2,483,460,000 as ratified and 3,500,000,000 as an unratified workbook
+     * number. D-0438 ratified 3,500,000,000 and superseded the D-0421/D-0435 pool sizes. Genesis
+     * supply is the divisor for token price, so the inversion reached every dollar figure on the
+     * page — it is kept as the second scenario precisely so the size of that error stays visible
+     * rather than being quietly corrected away.
+     */
+    value: 2_483_460_000,
+    label: "superseded (D-0421/D-0435)",
+    cite: "superseded by D-0438 on 2026-09-10; Appendix A now reads 3,500,000,000",
   },
 };
 

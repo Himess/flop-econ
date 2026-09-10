@@ -139,7 +139,7 @@ export const CALCS: readonly CalcEntry[] = [
     title: "Queue cost",
     role: "validator",
     formula: "forgone = blockRewardIncome × daysQueued ÷ 365",
-    body: "Registering freezes the account's full reducible balance as self-stake and admits to ValidatorQueue, not the active set. Queued validators are not finality-eligible and earn no validator-leg reward, and promotion waits on a free slot behind a cap that is ratified at 1,000 but wired at 200.",
+    body: "Registering freezes the account's full reducible balance as self-stake and admits to ValidatorQueue, not the active set. Queued validators are not finality-eligible and earn no validator-leg reward, and promotion waits on a free slot behind a cap that is ratified at 1,000 but unreachable: E.41 records MaxAuthorities = MAX_ACTIVE_VALIDATORS = 200, and §5.3 states plainly that 1,000 active validators is not a supported runtime state.",
     cites: "§15.2 · R15.5b · E.41",
   },
   {
@@ -171,7 +171,7 @@ export const CALCS: readonly CalcEntry[] = [
     title: "Token price",
     role: "shared",
     formula: "valuation mode: price = valuation ÷ outstanding(anchorYear)\ndirect mode: price entered",
-    body: "FLOP has no maximum supply — after five halvings the reward holds at 3 in perpetuity — so there is no fully-diluted point to anchor on, and the anchor year is explicit and adjustable. The tool always computes both genesis scenarios: the specification ratifies 2,483,460,000 while the workbook behind FLOP's own calculator uses 3,500,000,000, with no ratifying decision. The two are about 41% apart at genesis, but era-0 issuance exceeds genesis itself, so the gap narrows to roughly 17% by year one and less after that.",
+    body: "FLOP has no maximum supply — after five halvings the reward holds at 3 in perpetuity — so there is no fully-diluted point to anchor on, and the anchor year is explicit and adjustable. The tool always computes both genesis scenarios, and on 2026-09-10 they swapped places: D-0438 ratified 3,500,000,000, superseding the D-0421/D-0435 pool sizes, so Appendix A's value of record is now the larger figure and 2,483,460,000 is the superseded one. This tool had the labels the other way round. Genesis supply is the divisor for token price, so the correction moved every dollar figure: at the year-one anchor, supply rises 16.9%, the implied price falls 14.5%, and the break-even valuation rises by the same 16.9%. Both columns are still computed, because the gap between them is the size of the error the tool published.",
     cites: "genesis_supply · #1418 · your assumption",
   },
   {

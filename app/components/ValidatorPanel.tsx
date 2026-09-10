@@ -289,8 +289,11 @@ export function ValidatorPanel({
             set({ setSize: size, ...(avgStake === undefined ? {} : { networkStake: avgStake * size }) });
           }}
           options={[
-            { value: String(SET_SIZES[0]), label: `${int(SET_SIZES[0])} wired` },
-            { value: String(SET_SIZES[1]), label: `${int(SET_SIZES[1])} ratified` },
+            // §5.3: "1,000 active validators is not a supported runtime state"; E.41 gives the
+            // reason — MaxAuthorities = MAX_ACTIVE_VALIDATORS = 200, so the ratified cap is
+            // unreachable rather than merely unwired.
+            { value: String(SET_SIZES[0]), label: `${int(SET_SIZES[0])} supported` },
+            { value: String(SET_SIZES[1]), label: `${int(SET_SIZES[1])} unreachable` },
           ]}
         />
       </Inputs>
